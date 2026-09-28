@@ -1,0 +1,71 @@
+# ── Env files: ignore every .env everywhere, EXCEPT .env.example ──────────────
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# ── Gradle / JVM build outputs ────────────────────────────────────────────────
+build/
+.gradle/
+out/
+*.class
+# Build jars/wars, but keep the Gradle Wrapper jar (must be committed)
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.jar
+*.war
+hs_err_pid*
+replay_pid*
+
+# ── Kotlin 2 compiler cache ───────────────────────────────────────────────────
+.kotlin/
+
+# ── Node / frontend ───────────────────────────────────────────────────────────
+node_modules/
+dist/
+.vite/
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Certificates and keys ─────────────────────────────────────────────────────
+deploy/certs/
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+
+# ── Generated k8s secrets/configmaps produced by deploy.sh ───────────────────
+deploy/k8s/**/generated-*.yaml
+deploy/k8s/*/generated/
+
+# ── Local data, tmp, logs ─────────────────────────────────────────────────────
+tmp/
+logs/
+*.local
+
+# ── Editors / OS ───────────────────────────────────────────────────────────────
+.idea/
+*.iml
+# Ignore .vscode contents everywhere (not the dir itself, so the negation below
+# can still reach into it), except the shared extensions.json
+**/.vscode/*
+!**/.vscode/extensions.json
+.DS_Store
+Thumbs.db
+*.swp
+
+# ── AI tool folders (Claude Code, Cursor) ──────────────────────────────────────
+# Ignored at every nesting depth (monorepo has per-service configs too).
+# .claude/* (not .claude/) so the negation below can still reach into the dir.
+**/.claude/*
+!**/.claude/settings.json
+.cursor/
