@@ -1,0 +1,10 @@
+drift:
+  jwt-secret: test-secret-32-bytes-long!!!!!!!
+  session-cookie-name: drift_session
+  cookie-secure: true
+  session-ttl: 24h
+  presence-ttl: 60s
+  cleanup-interval: 5m
+  max-avatar-size: 5MB
+  file-service-addr: localhost:9084
+JWT_SECRET: test-secret-32-bytes-long!!!!!!!
