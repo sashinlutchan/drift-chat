@@ -8,7 +8,8 @@ plugins {
     id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.jlleitschuh.gradle.ktlint") version "13.1.0"
-    id("io.gitlab.arturbosch.detekt") version "1.23.8"
+    id("dev.detekt") version "2.0.0-alpha.3"
+    id("com.google.protobuf") version "0.10.0"
     jacoco
 }
 
@@ -61,8 +62,15 @@ dependencies {
     // ── gRPC (Spring Boot 4.1 built-in starters) ────────────────────────────
     implementation("org.springframework.boot:spring-boot-starter-grpc-server")
     implementation("org.springframework.boot:spring-boot-starter-grpc-client")
-    implementation("io.grpc:grpc-kotlin-stub:1.4.3")
-    implementation("com.google.protobuf:protobuf-kotlin:4.36.1")
+    implementation("io.grpc:grpc-kotlin-stub:1.5.0")
+    implementation("io.grpc:grpc-protobuf")
+    implementation("io.grpc:grpc-stub")
+    implementation("com.google.protobuf:protobuf-kotlin:4.35.1")
+
+    // ── Object storage + MIME sniffing ──────────────────────────────────────
+    implementation("io.minio:minio:8.6.0")
+    implementation("org.apache.tika:tika-core:3.2.3")
+    implementation("io.micrometer:micrometer-registry-prometheus")
 
     // ── Scheduling (ShedLock) ───────────────────────────────────────────────
     implementation("net.javacrumbs.shedlock:shedlock-spring:7.10.1")
@@ -76,6 +84,8 @@ dependencies {
     testImplementation("io.mockk:mockk:1.14.6")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+    testImplementation("io.grpc:grpc-inprocess")
+    testImplementation("io.grpc:grpc-testing")
     testImplementation("org.testcontainers:postgresql:1.21.4")
     testImplementation("org.testcontainers:kafka:1.21.4")
     testImplementation("org.testcontainers:junit-jupiter:1.21.4")
@@ -98,6 +108,10 @@ jacoco {
     toolVersion = "0.8.14"
 }
 
+// Coverage is measured on the service, common, utils and controller packages (spec section 23).
+val coverageIncludes =
+    listOf("com/drift/file/service/**", "com/drift/file/common/**", "com/drift/file/utils/**", "com/drift/file/controller/**")
+
 tasks.jacocoTestReport {
     dependsOn(tasks.test)
     reports {
@@ -105,13 +119,7 @@ tasks.jacocoTestReport {
         html.required = true
     }
     classDirectories.setFrom(
-        files(
-            classDirectories.files.map {
-                fileTree(it) {
-                    exclude("com/drift/file/**/config/**", "com/drift/file/**/persistence/**", "com/drift/file/FileServiceApplication*")
-                }
-            },
-        )
+        files(sourceSets.main.get().output.classesDirs.files.map { fileTree(it) { include(coverageIncludes) } }),
     )
 }
 
@@ -120,13 +128,7 @@ tasks.jacocoTestCoverageVerification {
     executionData(tasks.test.get())
     sourceDirectories.setFrom(files(sourceSets.main.get().allSource.srcDirs))
     classDirectories.setFrom(
-        files(
-            sourceSets.main.get().output.classesDirs.files.map {
-                fileTree(it) {
-                    exclude("com/drift/file/**/config/**", "com/drift/file/**/persistence/**", "com/drift/file/FileServiceApplication*")
-                }
-            },
-        )
+        files(sourceSets.main.get().output.classesDirs.files.map { fileTree(it) { include(coverageIncludes) } }),
     )
     violationRules {
         rule {
@@ -145,4 +147,47 @@ tasks.check {
 
 tasks.bootJar {
     layered {}
+}
+
+detekt {
+    config.setFrom(files("detekt.yml"))
+    buildUponDefaultConfig = true
+}
+
+// ── Protobuf / gRPC code generation (spec section 16) ───────────────────────
+// Shared protos live in backend/proto. Locally they are at ../proto; inside the Docker build
+// (context = backend/) they are copied to ./proto (see Dockerfile).
+val protoRoot: File = listOf(file("../proto"), file("proto")).first { it.exists() }
+
+sourceSets {
+    main {
+        proto {
+            srcDir(protoRoot)
+            include("file/**", "room/**", "user/**")
+        }
+    }
+}
+
+protobuf {
+    protoc { artifact = "com.google.protobuf:protoc:4.35.1" }
+    plugins {
+        create("grpc") { artifact = "io.grpc:protoc-gen-grpc-java:1.83.1" }
+        create("grpckt") { artifact = "io.grpc:protoc-gen-grpc-kotlin:1.5.0:jdk8@jar" }
+    }
+    generateProtoTasks {
+        all().forEach {
+            it.plugins {
+                maybeCreate("grpc")
+                maybeCreate("grpckt")
+            }
+            it.builtins { maybeCreate("kotlin") }
+        }
+    }
+}
+
+// Lint only our own sources, never the generated protobuf/gRPC code.
+afterEvaluate {
+    tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.BaseKtLintCheckTask>().configureEach {
+        setSource(fileTree("src") { include("**/*.kt", "**/*.kts") })
+    }
 }

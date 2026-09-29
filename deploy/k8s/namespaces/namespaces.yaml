@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: drift
+  labels: { app.kubernetes.io/part-of: drift }
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+  labels: { app.kubernetes.io/part-of: drift }

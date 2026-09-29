@@ -5,13 +5,13 @@ import com.drift.user.config.AppProperties
 import com.drift.user.dto.OwnUserDto
 import com.drift.user.dto.UserDto
 import com.drift.user.dto.UsernameCheckDto
-import com.drift.user.service.UserService
+import com.drift.user.interfaces.IUserService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.security.web.csrf.CsrfToken
 import jakarta.validation.constraints.NotBlank
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.security.web.csrf.CsrfToken
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -31,13 +31,13 @@ import java.util.UUID
 @RestController
 @Validated
 class UserController(
-    private val userService: UserService,
+    private val userService: IUserService,
     private val properties: AppProperties,
 ) {
     @GetMapping("/users/csrf")
     fun csrf(request: HttpServletRequest): ResponseEntity<Unit> {
-        // Force the deferred CsrfToken to resolve so the XSRF-TOKEN cookie is written.
-        request.getAttribute(CsrfToken::class.java.getName())
+        // The token is created lazily: reading its value is what makes Spring write the XSRF-TOKEN cookie.
+        (request.getAttribute(CsrfToken::class.java.name) as? CsrfToken)?.token
         return ResponseEntity.ok().build()
     }
 

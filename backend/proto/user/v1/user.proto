@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package user.v1;
+
+option java_multiple_files = true;
+option java_package = "com.drift.grpc.user.v1";
+
+// Internal user API used by room-service and message-service.
+service UserService {
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
+  rpc SetPresence(SetPresenceRequest) returns (SetPresenceResponse);
+  rpc GetPresence(GetPresenceRequest) returns (GetPresenceResponse);
+}
+
+message UserProfile {
+  string id = 1;
+  string username = 2;
+  string name = 3;
+  string avatar_file_id = 4;
+  bool online = 5;
+}
+
+message GetUserRequest { string user_id = 1; }
+message GetUserResponse {
+  bool found = 1;
+  UserProfile user = 2;
+}
+
+message GetUsersRequest { repeated string user_ids = 1; }
+message GetUsersResponse { repeated UserProfile users = 1; }
+
+message SetPresenceRequest {
+  string user_id = 1;
+  bool online = 2;
+}
+message SetPresenceResponse {}
+
+message GetPresenceRequest { repeated string user_ids = 1; }
+message GetPresenceResponse { map<string, bool> online = 1; }

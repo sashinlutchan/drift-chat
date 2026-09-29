@@ -1,15 +1,15 @@
 package com.drift.user.service
 
-import com.drift.user.common.DomainError
 import com.drift.user.common.EventEnvelope
 import com.drift.user.common.JwtSupport
 import com.drift.user.config.AppProperties
-import com.drift.user.domain.AvatarUploader
-import com.drift.user.domain.EventPublisher
-import com.drift.user.domain.NewUser
-import com.drift.user.domain.PresenceStore
-import com.drift.user.domain.User
-import com.drift.user.domain.UserRepository
+import com.drift.user.exceptions.DomainError
+import com.drift.user.interfaces.IAvatarUploader
+import com.drift.user.interfaces.IEventPublisher
+import com.drift.user.interfaces.IPresenceStore
+import com.drift.user.models.NewUser
+import com.drift.user.models.User
+import com.drift.user.repository.IUserRepository
 import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -31,16 +31,16 @@ import java.util.UUID
 
 @ExtendWith(MockKExtension::class)
 class UserServiceTest {
-    @MockK lateinit var userRepository: UserRepository
+    @MockK lateinit var userRepository: IUserRepository
 
     @MockK(relaxed = true)
-    lateinit var presenceStore: PresenceStore
+    lateinit var presenceStore: IPresenceStore
 
     @MockK(relaxed = true)
-    lateinit var avatarUploader: AvatarUploader
+    lateinit var avatarUploader: IAvatarUploader
 
     @MockK(relaxed = true)
-    lateinit var eventPublisher: EventPublisher
+    lateinit var eventPublisher: IEventPublisher
 
     private lateinit var userService: UserService
 
@@ -60,11 +60,15 @@ class UserServiceTest {
             fileServiceAddr = "localhost:9084",
         )
 
+    private val meters =
+        io.micrometer.core.instrument.simple
+            .SimpleMeterRegistry()
+
     @BeforeEach
     fun setUp() {
         io.mockk.MockKAnnotations.init(this, relaxUnitFun = true)
         userService =
-            UserService(userRepository, presenceStore, avatarUploader, eventPublisher, jwtSupport, props, clock)
+            UserService(userRepository, presenceStore, avatarUploader, eventPublisher, jwtSupport, props, clock, meters)
     }
 
     @Test
@@ -103,14 +107,18 @@ class UserServiceTest {
     fun `sign up stores avatar saves user and issues jwt`() {
         every { userRepository.existsByUsername("sipho") } returns false
         val fileId = UUID.randomUUID()
-        every { avatarUploader.uploadAvatar(any(), any(), any(), any(), any()) } returns fileId
+        val ownerSlot: CapturingSlot<UUID> = slot()
+        every { avatarUploader.uploadAvatar(capture(ownerSlot), any(), any(), any(), any()) } returns fileId
         val savedSlot: CapturingSlot<NewUser> = slot()
         every { userRepository.save(capture(savedSlot)) } answers {
             val nu = savedSlot.captured
-            User(UUID.randomUUID(), nu.username, nu.name, nu.email, nu.avatarFileId, fixedNow, fixedNow, nu.expiresAt)
+            User(nu.id, nu.username, nu.name, nu.email, nu.avatarFileId, fixedNow, fixedNow, nu.expiresAt)
         }
 
         val result = userService.signUp("sipho", "Sipho", "a@b.co", "a.png", "image/png", stream(), 10L)
+
+        // The avatar is stored under the real user id, which is how file-service finds it when the user expires
+        assertThat(ownerSlot.captured).isEqualTo(result.user.id)
 
         assertThat(result.user.username).isEqualTo("sipho")
         assertThat(result.user.avatarFileId).isEqualTo(fileId)
@@ -118,6 +126,19 @@ class UserServiceTest {
         assertThat(result.sessionJwt).isNotBlank()
         val claims = jwtSupport.verify(result.sessionJwt)
         assertThat(claims!!.getClaim("username")).isEqualTo("sipho")
+    }
+
+    @Test
+    fun `sign up removes the stored avatar again if the user cannot be saved`() {
+        every { userRepository.existsByUsername("sipho") } returns false
+        val fileId = UUID.randomUUID()
+        every { avatarUploader.uploadAvatar(any(), any(), any(), any(), any()) } returns fileId
+        every { userRepository.save(any()) } throws IllegalStateException("db down")
+
+        assertThatThrownBy { userService.signUp("sipho", "Sipho", "a@b.co", "a.png", "image/png", stream(), 10L) }
+            .isInstanceOf(IllegalStateException::class.java)
+
+        verify { avatarUploader.deleteAvatar(fileId) }
     }
 
     @Test
@@ -182,6 +203,7 @@ class UserServiceTest {
         val deleted = userService.deleteExpiredUsers()
 
         assertThat(deleted).containsExactly(expiredId)
+        assertThat(meters.counter("drift.users.expired").count()).isEqualTo(1.0)
         verify { presenceStore.remove(expiredId) }
         verify {
             eventPublisher.publish(

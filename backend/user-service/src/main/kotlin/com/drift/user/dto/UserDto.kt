@@ -1,6 +1,6 @@
 package com.drift.user.dto
 
-import com.drift.user.domain.User
+import com.drift.user.models.User
 import java.time.Instant
 import java.util.UUID
 
