@@ -1,0 +1,2 @@
+drift:
+  jwt-secret: test-secret-key-that-is-32-bytes-long!

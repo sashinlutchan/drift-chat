@@ -1,0 +1,75 @@
+# ingress-nginx routing (spec sections 13.5 and 25). scripts/deploy.sh replaces __HOST__ and __GRAFANA_HOST__ with the
+# nip.io names built from the minikube IP, so no hosts-file edits are needed. Served over plain HTTP (no certificates).
+#
+# Same rules as the Docker Compose edge: /api/v1/* to the services (prefix removed), /socket.io/ to message-service's
+# socket port with WebSocket timeouts, everything else to the frontend. Chunk uploads stream through unbuffered.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: drift-api
+  namespace: drift
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    # UPLOAD_CHUNK_SIZE (8 MB) plus headroom; request buffering off and long timeouts so 1 GB uploads stream through
+    nginx.ingress.kubernetes.io/proxy-body-size: 9m
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/limit-rps: "30"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "3"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: __HOST__
+      http:
+        paths:
+          - { path: /api/v1/(users.*), pathType: ImplementationSpecific, backend: { service: { name: user-service, port: { name: http } } } }
+          - { path: /api/v1/(rooms.*), pathType: ImplementationSpecific, backend: { service: { name: room-service, port: { name: http } } } }
+          - { path: /api/v1/(messages.*), pathType: ImplementationSpecific, backend: { service: { name: message-service, port: { name: http } } } }
+          - { path: /api/v1/(files.*), pathType: ImplementationSpecific, backend: { service: { name: file-service, port: { name: http } } } }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: drift-socket
+  namespace: drift
+  annotations:
+    # WebSocket upgrade is automatic in ingress-nginx; these keep long-lived chat connections open
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: __HOST__
+      http:
+        paths:
+          - { path: /socket.io, pathType: Prefix, backend: { service: { name: message-service, port: { name: socket } } } }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: drift-frontend
+  namespace: drift
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: __HOST__
+      http:
+        paths:
+          - { path: /, pathType: Prefix, backend: { service: { name: frontend, port: { name: http } } } }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana
+  namespace: observability
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: __GRAFANA_HOST__
+      http:
+        paths:
+          - { path: /, pathType: Prefix, backend: { service: { name: grafana, port: { name: http } } } }

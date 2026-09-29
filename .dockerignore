@@ -1,0 +1,16 @@
+# One ignore file for every image: they are all built from the repository root (see docker-compose.yml).
+.git
+.claude
+.idea
+.vscode
+**/.DS_Store
+**/*.log
+**/.env
+**/build
+**/.gradle
+**/.kotlin
+**/node_modules
+frontend/drift-chat/dist
+backend/message-service/spike
+deploy
+docs

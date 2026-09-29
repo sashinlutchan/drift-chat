@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: room-service
+  namespace: drift
+  labels: { app: room-service, app.kubernetes.io/part-of: drift }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: room-service }
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+  template:
+    metadata:
+      labels: { app: room-service }
+    spec:
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: { type: RuntimeDefault }
+      initContainers:
+        # Wait until postgres-init has created this service's database, so the service starts cleanly the first time
+        - name: wait-for-database
+          image: postgres:18.0-alpine
+          envFrom: [{ secretRef: { name: postgres-secret } }]
+          command:
+            - sh
+            - -c
+            - |
+              export PGPASSWORD="$POSTGRES_PASSWORD"
+              until psql -h postgres -U "$POSTGRES_USER" -d rooms_db -c 'select 1' >/dev/null 2>&1; do echo "waiting for rooms_db"; sleep 3; done
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { memory: 64Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+      containers:
+        - name: room-service
+          image: drift/room-service:local
+          # Images are loaded straight into minikube (no registry), so never pull
+          imagePullPolicy: Never
+          ports:
+            - { containerPort: 8082, name: http }
+            - { containerPort: 9082, name: grpc }
+            - { containerPort: 8182, name: management }
+          # ConfigMap and Secret are generated from backend/room-service/.env by scripts/deploy.sh
+          envFrom:
+            - configMapRef: { name: room-service-config }
+            - secretRef: { name: room-service-secret }
+          env:
+            - { name: JAVA_OPTS, value: "-XX:MaxRAMPercentage=70.0" }
+          startupProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: management }
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 15
+            timeoutSeconds: 5
+          resources:
+            requests: { cpu: 100m, memory: 384Mi }
+            limits: { memory: 768Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - { name: tmp, emptyDir: {} }

@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package file.v1;
+
+option java_multiple_files = true;
+option java_package = "com.drift.grpc.file.v1";
+
+// Internal file API. Small files (avatars) use Upload; room media up to 1 GB uses the multipart RPCs.
+service FileService {
+  // First message carries metadata, the rest carry chunks.
+  rpc Upload(stream UploadRequest) returns (UploadResponse);
+  rpc StartMultipart(StartMultipartRequest) returns (StartMultipartResponse);
+  // First message carries the part header, the rest carry bytes of that one part.
+  rpc UploadPart(stream UploadPartRequest) returns (UploadPartResponse);
+  rpc CompleteMultipart(CompleteMultipartRequest) returns (CompleteMultipartResponse);
+  rpc AbortMultipart(AbortMultipartRequest) returns (AbortMultipartResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc GetMetadata(GetMetadataRequest) returns (GetMetadataResponse);
+}
+
+enum FileKind {
+  FILE_KIND_UNSPECIFIED = 0;
+  FILE_KIND_AVATAR = 1;
+  FILE_KIND_MEDIA = 2;
+}
+
+message UploadHeader {
+  string owner_id = 1;
+  string room_id = 2; // empty for avatars
+  FileKind kind = 3;
+  string file_name = 4;
+  string declared_mime_type = 5;
+}
+message UploadRequest {
+  oneof payload {
+    UploadHeader header = 1;
+    bytes chunk = 2;
+  }
+}
+message UploadResponse {
+  string file_id = 1;
+  string mime_type = 2;
+  int64 size_bytes = 3;
+}
+
+message StartMultipartRequest {
+  UploadHeader header = 1;
+  int64 size_bytes = 2;
+}
+message StartMultipartResponse {
+  string file_id = 1;
+  string multipart_id = 2;
+}
+
+message PartHeader {
+  string file_id = 1;
+  string multipart_id = 2;
+  int32 part_number = 3; // 1-based
+}
+message UploadPartRequest {
+  oneof payload {
+    PartHeader header = 1;
+    bytes chunk = 2;
+  }
+}
+message UploadPartResponse {
+  int32 part_number = 1;
+  string etag = 2;
+  int64 size_bytes = 3;
+}
+
+message CompleteMultipartRequest {
+  string file_id = 1;
+  string multipart_id = 2;
+  int64 expected_size_bytes = 3;
+}
+message CompleteMultipartResponse {
+  string file_id = 1;
+  string mime_type = 2; // sniffed
+  int64 size_bytes = 3;
+}
+
+message AbortMultipartRequest {
+  string file_id = 1;
+  string multipart_id = 2;
+}
+message AbortMultipartResponse {}
+
+message DeleteRequest { string file_id = 1; }
+message DeleteResponse { bool deleted = 1; }
+
+message GetMetadataRequest { string file_id = 1; }
+message GetMetadataResponse {
+  bool found = 1;
+  string file_id = 2;
+  string owner_id = 3;
+  string room_id = 4;
+  FileKind kind = 5;
+  string mime_type = 6;
+  int64 size_bytes = 7;
+}

@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package room.v1;
+
+option java_multiple_files = true;
+option java_package = "com.drift.grpc.room.v1";
+
+// Internal room API used by message-service and file-service.
+service RoomService {
+  rpc IsMember(IsMemberRequest) returns (IsMemberResponse);
+  rpc GetRoom(GetRoomRequest) returns (GetRoomResponse);
+}
+
+message IsMemberRequest {
+  string room_id = 1;
+  string user_id = 2;
+}
+message IsMemberResponse {
+  bool room_exists = 1;
+  bool is_member = 2;
+}
+
+message GetRoomRequest { string room_id = 1; }
+message GetRoomResponse {
+  bool found = 1;
+  string id = 2;
+  string name = 3;
+  string slug = 4;
+  string created_by = 5;
+}
