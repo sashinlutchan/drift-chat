@@ -1,0 +1,13 @@
+package com.drift.user.exceptions
+
+enum class ErrorCode {
+    VALIDATION_FAILED,
+    USERNAME_TAKEN,
+    USERNAME_INVALID,
+    NOT_FOUND,
+    UNAUTHORIZED,
+    FORBIDDEN,
+    PAYLOAD_TOO_LARGE,
+    UNSUPPORTED_MEDIA_TYPE,
+    INTERNAL_ERROR,
+}

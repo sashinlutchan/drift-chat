@@ -8,10 +8,19 @@ spring:
   threads:
     virtual:
       enabled: true
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.grpc.server.autoconfigure.security.GrpcServerSecurityAutoConfiguration
+      - org.springframework.boot.grpc.server.autoconfigure.security.GrpcServerOAuth2ResourceServerAutoConfiguration
+  grpc:
+    server:
+      port: ${GRPC_PORT:9081}
+      health:
+        enabled: true
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/users_db}
-    username: ${DATABASE_USERNAME:drift}
-    password: ${DATABASE_PASSWORD:drift}
+    username: ${DATABASE_USERNAME:admin-change-me}
+    password: ${DATABASE_PASSWORD:admin-change-me}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -24,12 +33,10 @@ spring:
       port: ${VALKEY_PORT:6379}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          # Token is read from the drift_session cookie (custom BearerTokenResolver)
-          jwk-set-uri: unused://local-hs256
+    listener:
+      observation-enabled: true
+    template:
+      observation-enabled: true
   servlet:
     multipart:
       max-file-size: ${MAX_AVATAR_SIZE:5MB}
@@ -50,18 +57,38 @@ management:
     health:
       probes:
         enabled: true
+      group:
+        readiness:
+          include: readinessState,db,redis,kafka
   health:
-    redis:
+    kafka:
       enabled: true
-    db:
-      enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE_RATE:1.0}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: false
 
 logging:
   level:
     root: ${LOG_LEVEL:INFO}
-  include:
-    trace-id: true
-    span-id: true
+  structured:
+    format:
+      console: ${LOG_FORMAT:logstash}
+    json:
+      add:
+        service: ${SERVICE_NAME:user-service}
 
 springdoc:
   api-docs:

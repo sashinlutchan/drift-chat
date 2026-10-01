@@ -9,10 +9,6 @@ import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-/**
- * Placeholder AES-256-GCM implementation so the test setup can be verified in Phase 0.
- * The full component (with key versions) arrives in Phase 1.
- */
 object AesGcmCipher {
     fun encrypt(
         plaintext: ByteArray,
@@ -38,7 +34,7 @@ object AesGcmCipher {
 }
 
 class AesGcmCipherTest {
-    private val key = "0123456789abcdef0123456789abcdef".toByteArray() // 32 bytes = AES-256
+    private val key = "0123456789abcdef0123456789abcdef".toByteArray()
 
     @Test
     fun `round trip preserves content`() {

@@ -1,0 +1,15 @@
+.git
+.claude
+.idea
+.vscode
+**/.DS_Store
+**/*.log
+**/.env
+**/build
+**/.gradle
+**/.kotlin
+**/node_modules
+frontend/drift-chat/dist
+backend/message-service/spike
+deploy
+docs

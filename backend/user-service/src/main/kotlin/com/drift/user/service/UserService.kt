@@ -1,15 +1,20 @@
 package com.drift.user.service
 
-import com.drift.user.common.DomainError
 import com.drift.user.common.EventEnvelope
 import com.drift.user.common.JwtSupport
 import com.drift.user.config.AppProperties
-import com.drift.user.domain.AvatarUploader
-import com.drift.user.domain.EventPublisher
-import com.drift.user.domain.NewUser
-import com.drift.user.domain.PresenceStore
-import com.drift.user.domain.User
-import com.drift.user.domain.UserRepository
+import com.drift.user.exceptions.DomainError
+import com.drift.user.interfaces.IAvatarUploader
+import com.drift.user.interfaces.IEventPublisher
+import com.drift.user.interfaces.IPresenceStore
+import com.drift.user.interfaces.IUserService
+import com.drift.user.models.NewUser
+import com.drift.user.models.PresenceChangedPayload
+import com.drift.user.models.SignUpResult
+import com.drift.user.models.User
+import com.drift.user.models.UserDeletedPayload
+import com.drift.user.models.UserUpdatedPayload
+import com.drift.user.repository.IUserRepository
 import com.drift.user.utils.AvatarTypeValidator
 import com.drift.user.utils.UsernameValidator
 import org.springframework.stereotype.Service
@@ -18,24 +23,19 @@ import java.io.InputStream
 import java.time.Clock
 import java.util.UUID
 
-/**
- * User business logic (spec sections 3 and 13.1). Talks only to the domain ports
- * ([UserRepository], [PresenceStore], [AvatarUploader], [EventPublisher]) —
- * never to Spring Data, Valkey or Kafka directly (spec section 21 layering rule).
- */
 @Service
 class UserService(
-    private val userRepository: UserRepository,
-    private val presenceStore: PresenceStore,
-    private val avatarUploader: AvatarUploader,
-    private val eventPublisher: EventPublisher,
+    private val userRepository: IUserRepository,
+    private val presenceStore: IPresenceStore,
+    private val avatarUploader: IAvatarUploader,
+    private val eventPublisher: IEventPublisher,
     private val jwtSupport: JwtSupport,
     private val properties: AppProperties,
     private val clock: Clock,
-) {
-    /** Sign up: validates input, stores the avatar, saves the user, issues the session JWT. */
+    private val meters: io.micrometer.core.instrument.MeterRegistry,
+) : IUserService {
     @Transactional
-    fun signUp(
+    override fun signUp(
         username: String,
         name: String,
         email: String,
@@ -62,9 +62,10 @@ class UserService(
             throw DomainError.UsernameTaken("This username is taken.")
         }
 
+        val userId = UUID.randomUUID()
         val avatarFileId =
             avatarUploader.uploadAvatar(
-                ownerId = UUID.nameUUIDFromBytes(username.toByteArray()),
+                ownerId = userId,
                 fileName = avatarFileName ?: "avatar",
                 contentType = avatarContentType ?: "application/octet-stream",
                 content = avatarContent,
@@ -72,31 +73,39 @@ class UserService(
             )
 
         val user =
-            userRepository.save(
-                NewUser(
-                    username = username,
-                    name = name,
-                    email = email,
-                    avatarFileId = avatarFileId,
-                    expiresAt = clock.instant().plus(properties.sessionTtl),
-                ),
-            )
+            try {
+                userRepository.save(
+                    NewUser(
+                        id = userId,
+                        username = username,
+                        name = name,
+                        email = email,
+                        avatarFileId = avatarFileId,
+                        expiresAt = clock.instant().plus(properties.sessionTtl),
+                    ),
+                )
+            } catch (
+                @Suppress("TooGenericExceptionCaught") e: Exception,
+            ) {
+                runCatching { avatarUploader.deleteAvatar(avatarFileId) }
+                throw e
+            }
 
         val token = jwtSupport.issue(user.id.toString(), user.username, properties.sessionTtl).serialize()
         return SignUpResult(user, token)
     }
 
     @Transactional(readOnly = true)
-    fun getById(id: UUID): User = userRepository.findById(id) ?: throw DomainError.NotFound("User not found.")
+    override fun getById(id: UUID): User = userRepository.findById(id) ?: throw DomainError.NotFound("User not found.")
 
     @Transactional(readOnly = true)
-    fun getByIds(ids: Collection<UUID>): List<User> = userRepository.findAllByIds(ids)
+    override fun getByIds(ids: Collection<UUID>): List<User> = userRepository.findAllByIds(ids)
 
     @Transactional(readOnly = true)
-    fun usernameAvailable(username: String): Boolean = !userRepository.existsByUsername(username)
+    override fun usernameAvailable(username: String): Boolean = !userRepository.existsByUsername(username)
 
     @Transactional
-    fun updateProfile(
+    override fun updateProfile(
         id: UUID,
         name: String?,
         email: String?,
@@ -135,18 +144,34 @@ class UserService(
         return updated
     }
 
-    /** Presence heartbeat (spec section 4): keeps the user online for PRESENCE_TTL. */
-    fun heartbeat(userId: UUID) {
+    override fun heartbeat(userId: UUID) {
         presenceStore.heartbeat(userId, properties.presenceTtl)
     }
 
-    fun isOnline(userId: UUID): Boolean = presenceStore.isOnline(userId)
+    override fun setPresence(
+        userId: UUID,
+        online: Boolean,
+    ) {
+        val wasOnline = presenceStore.isOnline(userId)
+        if (online) presenceStore.heartbeat(userId, properties.presenceTtl) else presenceStore.remove(userId)
+        if (wasOnline != online) {
+            eventPublisher.publish(
+                EventEnvelope.Companion.Topics.PRESENCE_CHANGED,
+                EventEnvelope(
+                    type = "presence.changed",
+                    timestamp = clock.instant(),
+                    payload = PresenceChangedPayload(userId.toString(), online),
+                ),
+            )
+        }
+    }
 
-    fun onlineStatus(ids: Collection<UUID>): Map<UUID, Boolean> = ids.associateWith { presenceStore.isOnline(it) }
+    override fun isOnline(userId: UUID): Boolean = presenceStore.isOnline(userId)
 
-    /** Cleanup (spec section 13.1): deletes expired users and publishes `user.deleted`. */
+    override fun onlineStatus(ids: Collection<UUID>): Map<UUID, Boolean> = ids.associateWith { presenceStore.isOnline(it) }
+
     @Transactional
-    fun deleteExpiredUsers(): List<UUID> {
+    override fun deleteExpiredUsers(): List<UUID> {
         val deleted = userRepository.deleteExpired(clock.instant())
         deleted.forEach { id ->
             presenceStore.remove(id)
@@ -155,6 +180,7 @@ class UserService(
                 EventEnvelope(type = "user.deleted", timestamp = clock.instant(), payload = UserDeletedPayload(id.toString())),
             )
         }
+        meters.counter("drift.users.expired").increment(deleted.size.toDouble())
         return deleted
     }
 
@@ -168,22 +194,6 @@ class UserService(
             ),
         )
     }
-
-    data class SignUpResult(
-        val user: User,
-        val sessionJwt: String,
-    )
-
-    data class UserDeletedPayload(
-        val userId: String,
-    )
-
-    data class UserUpdatedPayload(
-        val userId: String,
-        val username: String,
-        val name: String,
-        val avatarFileId: String?,
-    )
 
     companion object {
         const val MAX_NAME_LENGTH = 50

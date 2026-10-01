@@ -8,10 +8,14 @@ spring:
   threads:
     virtual:
       enabled: true
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.grpc.server.autoconfigure.security.GrpcServerSecurityAutoConfiguration
+      - org.springframework.boot.grpc.server.autoconfigure.security.GrpcServerOAuth2ResourceServerAutoConfiguration
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/rooms_db}
-    username: ${DATABASE_USERNAME:drift}
-    password: ${DATABASE_PASSWORD:drift}
+    username: ${DATABASE_USERNAME:admin-change-me}
+    password: ${DATABASE_PASSWORD:admin-change-me}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -20,11 +24,20 @@ spring:
     enabled: true
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: unused://local-hs256
+    listener:
+      observation-enabled: true
+    template:
+      observation-enabled: true
+    consumer:
+      group-id: room-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  grpc:
+    server:
+      port: ${GRPC_PORT:9082}
+      health:
+        enabled: true
 
 server:
   port: ${HTTP_PORT:8082}
@@ -41,10 +54,43 @@ management:
     health:
       probes:
         enabled: true
+      group:
+        readiness:
+          include: readinessState,db,kafka
+  health:
+    kafka:
+      enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE_RATE:1.0}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: false
 
 logging:
   level:
     root: ${LOG_LEVEL:INFO}
-  include:
-    trace-id: true
-    span-id: true
+  structured:
+    format:
+      console: ${LOG_FORMAT:logstash}
+    json:
+      add:
+        service: ${SERVICE_NAME:room-service}
+
+drift:
+  jwt-secret: ${JWT_SECRET:test-secret-key-that-is-32-bytes-long!}
+  session-cookie-name: ${SESSION_COOKIE_NAME:drift_session}
+  room-idle-ttl: ${ROOM_IDLE_TTL:24h}
+  cleanup-interval: ${CLEANUP_INTERVAL:5m}
+  user-service-addr: ${USER_SERVICE_ADDR:localhost:9081}
+  public-base-url: ${PUBLIC_BASE_URL:https://localhost:8443}

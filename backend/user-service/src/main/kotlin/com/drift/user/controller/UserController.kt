@@ -5,13 +5,13 @@ import com.drift.user.config.AppProperties
 import com.drift.user.dto.OwnUserDto
 import com.drift.user.dto.UserDto
 import com.drift.user.dto.UsernameCheckDto
-import com.drift.user.service.UserService
+import com.drift.user.interfaces.IUserService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.security.web.csrf.CsrfToken
 import jakarta.validation.constraints.NotBlank
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.security.web.csrf.CsrfToken
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -24,20 +24,15 @@ import org.springframework.web.multipart.MultipartFile
 import java.security.Principal
 import java.util.UUID
 
-/**
- * REST API for user-service (spec section 14): sign up, csrf bootstrap, own profile,
- * public profiles, username check. Thin — all logic is in [UserService].
- */
 @RestController
 @Validated
 class UserController(
-    private val userService: UserService,
+    private val userService: IUserService,
     private val properties: AppProperties,
 ) {
     @GetMapping("/users/csrf")
     fun csrf(request: HttpServletRequest): ResponseEntity<Unit> {
-        // Force the deferred CsrfToken to resolve so the XSRF-TOKEN cookie is written.
-        request.getAttribute(CsrfToken::class.java.getName())
+        (request.getAttribute(CsrfToken::class.java.name) as? CsrfToken)?.token
         return ResponseEntity.ok().build()
     }
 

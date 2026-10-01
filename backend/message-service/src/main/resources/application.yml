@@ -10,8 +10,8 @@ spring:
       enabled: true
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/messages_db}
-    username: ${DATABASE_USERNAME:drift}
-    password: ${DATABASE_PASSWORD:drift}
+    username: ${DATABASE_USERNAME:admin-change-me}
+    password: ${DATABASE_PASSWORD:admin-change-me}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -24,16 +24,17 @@ spring:
       port: ${VALKEY_PORT:6379}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    listener:
+      observation-enabled: true
+    template:
+      observation-enabled: true
     consumer:
-      group-id: ${SERVICE_NAME:message-service}-${HOSTNAME:pod}
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: unused://local-hs256
+      group-id: ${SERVICE_NAME:message-service}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
   servlet:
     multipart:
-      # Limits sized to a chunk, not the whole file (spec 13.6)
       max-file-size: ${UPLOAD_CHUNK_SIZE:8MB}
       max-request-size: ${UPLOAD_CHUNK_SIZE:8MB}
 
@@ -52,18 +53,57 @@ management:
     health:
       probes:
         enabled: true
+      group:
+        readiness:
+          include: readinessState,db,redis,kafka
   health:
-    redis:
+    kafka:
       enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+        "[drift.messages.fanout.latency]": true
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE_RATE:1.0}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: false
 
 logging:
   level:
     root: ${LOG_LEVEL:INFO}
-  include:
-    trace-id: true
-    span-id: true
+  structured:
+    format:
+      console: ${LOG_FORMAT:logstash}
+    json:
+      add:
+        service: ${SERVICE_NAME:message-service}
 
 drift:
+  jwt-secret: ${JWT_SECRET:test-secret-key-that-is-32-bytes-long!}
+  session-cookie-name: ${SESSION_COOKIE_NAME:drift_session}
+  message-encryption-key: ${MESSAGE_ENCRYPTION_KEY:Y2hhbmdlLW1lLWNoYW5nZS1tZS1jaGFuZ2UtbWUtMzI=}
+  message-encryption-key-version: ${MESSAGE_ENCRYPTION_KEY_VERSION:1}
+  message-encryption-previous-keys: ${MESSAGE_ENCRYPTION_PREVIOUS_KEYS:}
+  max-message-length: ${MAX_MESSAGE_LENGTH:2000}
+  max-file-size: ${MAX_FILE_SIZE:5GB}
+  upload-chunk-size: ${UPLOAD_CHUNK_SIZE:8MB}
+  upload-session-ttl: ${UPLOAD_SESSION_TTL:1h}
+  history-page-size: ${HISTORY_PAGE_SIZE:50}
+  allowed-mime-types: ${ALLOWED_MIME_TYPES:image/jpeg,image/png,image/gif,image/webp,image/avif,image/bmp,audio/mpeg,audio/ogg,audio/wav,audio/webm,audio/mp4,audio/aac,audio/flac,video/mp4,video/webm,video/ogg,video/quicktime}
+  socket-stale-after: ${SOCKET_STALE_AFTER:90s}
+  user-service-addr: ${USER_SERVICE_ADDR:localhost:9081}
+  room-service-addr: ${ROOM_SERVICE_ADDR:localhost:9082}
+  file-service-addr: ${FILE_SERVICE_ADDR:localhost:9084}
   socket:
     port: ${SOCKET_PORT:8090}
     allowed-origins: ${ALLOWED_ORIGINS:https://localhost:8443}
+    shutdown-grace: ${SHUTDOWN_TIMEOUT:30s}

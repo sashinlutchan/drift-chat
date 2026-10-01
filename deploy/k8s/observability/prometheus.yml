@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: drift-services
+    metrics_path: /actuator/prometheus
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces: { names: [drift] }
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_container_port_name]
+        regex: management
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: job
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: service
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+  - job_name: minio
+    metrics_path: /minio/v2/metrics/cluster
+    static_configs: [{ targets: ["minio.drift:9000"] }]
+  - job_name: minio-bucket
+    metrics_path: /minio/v2/metrics/bucket
+    static_configs: [{ targets: ["minio.drift:9000"] }]
+  - job_name: prometheus
+    static_configs: [{ targets: ["localhost:9090"] }]

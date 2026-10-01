@@ -3,11 +3,6 @@ package com.drift.message.socket
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
 
-/**
- * Phase 0 spike runner: starts the DriftSocketServer plus a tiny HTTP control endpoint
- * (`POST /__spike/force-close`) used by the Node client to test reconnection.
- * Run with:  ./gradlew :bootRun  (or kotlin script) — see spike/README.md
- */
 fun main() {
     val socketServer = DriftSocketServer(port = 8090, allowedOrigins = "*")
     socketServer.start()

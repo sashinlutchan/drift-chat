@@ -3,7 +3,6 @@ package com.drift.message
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
-/** message-service entry point. */
 @SpringBootApplication
 class MessageServiceApplication
 

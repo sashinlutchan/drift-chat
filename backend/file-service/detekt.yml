@@ -1,0 +1,38 @@
+complexity:
+  LongMethod:
+    allowedLines: 120
+  TooManyFunctions:
+    active: false
+  CyclomaticComplexMethod:
+    allowedComplexity: 20
+  LongParameterList:
+    active: false
+
+style:
+  MagicNumber:
+    active: true
+    ignoreNumbers: ['-1', '0', '1', '2', '3']
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+  MaxLineLength:
+    active: true
+    maxLineLength: 160
+    excludePackageStatements: true
+    excludeImportStatements: true
+  ThrowsCount:
+    active: true
+    max: 6
+  ReturnCount:
+    active: false
+  UnusedParameter:
+    active: false
+
+naming:
+  MatchingDeclarationName:
+    active: true
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: false
+  SwallowedException:
+    active: false

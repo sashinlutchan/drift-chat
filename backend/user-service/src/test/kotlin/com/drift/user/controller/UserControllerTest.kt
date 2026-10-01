@@ -1,17 +1,20 @@
 package com.drift.user.controller
 
-import com.drift.user.common.DomainError
+import com.drift.user.common.JwtSupport
 import com.drift.user.config.AppProperties
-import com.drift.user.domain.User
+import com.drift.user.exceptions.DomainError
+import com.drift.user.models.User
 import com.drift.user.service.UserService
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import jakarta.servlet.http.Cookie
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.security.oauth2.jwt.Jwt
@@ -19,6 +22,8 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.multipart
+import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
@@ -27,6 +32,7 @@ import java.util.UUID
 @AutoConfigureMockMvc(addFilters = true)
 @org.springframework.test.context.TestPropertySource(
     properties = [
+        "JWT_SECRET=test-secret-key-that-is-32-bytes-long!",
         "drift.jwt-secret=test-secret-32-bytes-long!!!!!!!",
         "drift.session-cookie-name=drift_session",
         "drift.cookie-secure=true",
@@ -107,6 +113,50 @@ class UserControllerTest {
                 file(name)
                 file(email)
             }.andExpect { status { isForbidden() } }
+    }
+
+    private fun sessionCookie(): Cookie =
+        Cookie(
+            "drift_session",
+            JwtSupport("test-secret-key-that-is-32-bytes-long!".toByteArray(), Clock.systemUTC())
+                .issue(userId.toString(), "sipho", Duration.ofHours(1))
+                .serialize(),
+        )
+
+    @Test
+    fun `patch profile with a valid session cookie but no csrf token is rejected with 403`() {
+        mockMvc
+            .multipart(HttpMethod.PATCH, "/users/me") {
+                file(MockMultipartFile("name", "", MediaType.TEXT_PLAIN_VALUE, "New".toByteArray()))
+                cookie(sessionCookie())
+            }.andExpect { status { isForbidden() } }
+    }
+
+    @Test
+    fun `me with a real signed session cookie is authenticated`() {
+        every { userService.getById(userId) } returns user()
+
+        mockMvc
+            .get("/users/me") { cookie(sessionCookie()) }
+            .andExpect { status { isOk() } }
+    }
+
+    @Test
+    fun `me with a tampered session cookie returns 401`() {
+        mockMvc
+            .get("/users/me") { cookie(Cookie("drift_session", "not-a-jwt")) }
+            .andExpect { status { isUnauthorized() } }
+    }
+
+    @Test
+    fun `the csrf bootstrap endpoint is public and sets a readable XSRF-TOKEN cookie`() {
+        mockMvc
+            .get("/users/csrf")
+            .andExpect {
+                status { isOk() }
+                cookie { exists("XSRF-TOKEN") }
+                cookie { httpOnly("XSRF-TOKEN", false) }
+            }
     }
 
     @Test
