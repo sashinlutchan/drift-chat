@@ -6,7 +6,6 @@ import io.grpc.StatusException
 
 private val log = KotlinLogging.logger {}
 
-/** Maps a [DomainError] to the closest gRPC status so callers get a meaningful code, not UNKNOWN. */
 fun DomainError.toGrpcStatus(): Status =
     when (this) {
         is DomainError.ValidationFailed, is DomainError.UsernameInvalid -> Status.INVALID_ARGUMENT
@@ -19,7 +18,6 @@ fun DomainError.toGrpcStatus(): Status =
         is DomainError.DependencyUnavailable -> Status.UNAVAILABLE
     }.withDescription(detail)
 
-/** Runs a gRPC handler body, turning domain errors into gRPC statuses and hiding unexpected failures. */
 inline fun <T> grpcGuard(block: () -> T): T =
     try {
         block()

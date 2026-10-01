@@ -44,12 +44,6 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
-/**
- * The whole message-service against real Postgres, Kafka and Valkey, driven by a real Socket.IO v4 handshake over a
- * WebSocket: cookie + Origin auth, entering rooms, sending, encrypted storage, Kafka fan-out back to the socket,
- * typing over Valkey pub/sub, presence, occupancy events, membership changes, cascades and resumable uploads.
- * Only the other services (room, user, file) are faked.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Testcontainers
 class MessageServiceIntegrationTest {
@@ -75,7 +69,6 @@ class MessageServiceIntegrationTest {
         fun properties(registry: DynamicPropertyRegistry) {
             registry.add("spring.data.redis.host") { valkey.host }
             registry.add("spring.data.redis.port") { valkey.getMappedPort(6379).toString() }
-            // a developer's local .env must not change the secret the test signs cookies with
             registry.add("drift.jwt-secret") { SECRET }
             registry.add("drift.socket.port") { socketPort.toString() }
             registry.add("drift.socket.allowed-origins") { ORIGIN }
@@ -129,7 +122,6 @@ class MessageServiceIntegrationTest {
     @AfterEach
     fun tearDown() = clients.forEach { it.close() }
 
-    /** Live relays read from `latest`, so events sent before the consumers are assigned would be missed. */
     private fun waitForKafkaListeners() {
         val deadline = System.currentTimeMillis() + 60_000
         while (System.currentTimeMillis() < deadline) {
@@ -157,8 +149,6 @@ class MessageServiceIntegrationTest {
         clientId: String,
     ) = client.emit("message:send", mapOf("roomId" to room.toString(), "text" to text, "clientId" to clientId))
 
-    // ── handshake security ──────────────────────────────────────────────────
-
     @Test
     fun `handshakes are refused without a cookie, with a bad token or from a foreign origin`() {
         assertThatThrownBy { SocketIoTestClient.connect(socketPort, ORIGIN, null) }.isInstanceOf(Exception::class.java)
@@ -180,8 +170,6 @@ class MessageServiceIntegrationTest {
         assertThat(waitFor { runCatching { verify { users.setPresence(sipho, true) } }.isSuccess }).isTrue()
     }
 
-    // ── chat flow ───────────────────────────────────────────────────────────
-
     @Test
     fun `a message is stored encrypted, acked to the sender and fanned out to everyone in the room via Kafka`() {
         val a = connect(sipho)
@@ -196,19 +184,16 @@ class MessageServiceIntegrationTest {
         val id = ack["data"]["id"].asText()
         a.await("message:ack") { it["clientId"].asText() == "client-1" }
 
-        // The other person sees it live, decrypted, with who sent it
         val received = b.await("message:new") { it["id"].asText() == id }
         assertThat(received["text"].asText()).isEqualTo("meet at 6 — top secret")
         assertThat(received["sender"]["name"].asText()).isEqualTo("Sipho")
         assertThat(received["type"].asText()).isEqualTo("text")
-        a.await("message:new") { it["id"].asText() == id } // the sender's own room also gets it
+        a.await("message:new") { it["id"].asText() == id }
 
-        // Nothing readable in Postgres
         val stored = jdbc.queryForObject("select ciphertext from messages where id = ?", ByteArray::class.java, UUID.fromString(id))!!
         assertThat(String(stored, Charsets.ISO_8859_1)).doesNotContain("secret")
         assertThat(jdbc.queryForObject("select key_version from messages where id = ?", Int::class.java, UUID.fromString(id))).isEqualTo(1)
 
-        // And nothing readable on the Kafka topic
         val raw = readTopic("message.created") { it.contains(id) }
         assertThat(raw).isNotNull()
         assertThat(raw).doesNotContain("secret")
@@ -267,8 +252,6 @@ class MessageServiceIntegrationTest {
         assertThat(send(a, "x".repeat(2001), "e2")["error"]["message"].asText()).contains("2000")
     }
 
-    // ── typing ──────────────────────────────────────────────────────────────
-
     @Test
     fun `typing shows for the others through Valkey pub-sub and clears when the user stops`() {
         val a = connect(sipho)
@@ -283,8 +266,6 @@ class MessageServiceIntegrationTest {
         a.emitNoAck("typing:stop", room.toString())
         b.await("typing:update") { it["users"].size() == 0 }
     }
-
-    // ── occupancy & heartbeat ───────────────────────────────────────────────
 
     @Test
     fun `entering and leaving a room publishes occupancy and keeps Valkey in step`() {
@@ -319,8 +300,6 @@ class MessageServiceIntegrationTest {
 
         assertThat(waitFor { runCatching { verify(atLeast = 2) { users.setPresence(sipho, true) } }.isSuccess }).isTrue()
     }
-
-    // ── events from other services ──────────────────────────────────────────
 
     private fun publish(
         topic: String,
@@ -400,8 +379,6 @@ class MessageServiceIntegrationTest {
         assertThat(page.messages.single { it.text == "I was here" }.senderDeleted).isTrue()
     }
 
-    // ── history ─────────────────────────────────────────────────────────────
-
     @Test
     fun `history pages backwards with a cursor and only for members`() {
         (1..7).forEach { messages.sendText(room, sipho, "message $it", "h$it") }
@@ -416,8 +393,6 @@ class MessageServiceIntegrationTest {
 
         assertThatThrownBy { messages.history(stranger, room, null, 3) }.hasMessageContaining("Join this room")
     }
-
-    // ── resumable upload ────────────────────────────────────────────────────
 
     @Test
     fun `an upload survives a dropped connection, resumes with the missing chunks and ends as a media message on the socket`() {
@@ -434,7 +409,6 @@ class MessageServiceIntegrationTest {
         assertThat(session.totalChunks).isEqualTo(2)
 
         uploads.uploadChunk(sipho, session.id, 0, chunk, ByteArrayInputStream(ByteArray(0)))
-        // "the connection drops": the client asks what already arrived and only sends the rest
         val (_, received) = uploads.status(sipho, session.id)
         assertThat(received).containsExactly(0)
         assertThatThrownBy { uploads.complete(sipho, session.id) }.hasMessageContaining("[1]")
@@ -449,9 +423,6 @@ class MessageServiceIntegrationTest {
         assertThat(redis.hasKey("upload:${session.id}")).isFalse()
     }
 
-    // ── helpers ─────────────────────────────────────────────────────────────
-
-    /** Reads a topic from the beginning until a record matching [matches] shows up. */
     private fun readTopic(
         topic: String,
         matches: (String) -> Boolean,

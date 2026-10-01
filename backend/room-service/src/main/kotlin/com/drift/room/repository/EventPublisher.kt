@@ -7,7 +7,6 @@ import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
 import java.time.Clock
 
-/** Kafka-backed [IEventPublisher]. */
 @Component
 class EventPublisher(
     private val kafka: KafkaTemplate<String, String>,

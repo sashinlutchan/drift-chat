@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-
 export type UploadPhase = 'uploading' | 'failed' | 'done' | 'cancelled'
 
 export interface UploadItem {
@@ -19,7 +18,6 @@ interface UploadsState {
   remove: (id: string) => void
 }
 
-/** What the upload progress bars show. The uploads themselves run in `lib/uploader.ts`, outside React. */
 export const useUploads = create<UploadsState>((set) => ({
   items: {},
   upsert: (item) => set((s) => ({ items: { ...s.items, [item.id]: item } })),

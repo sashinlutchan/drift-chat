@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Writes the provisioned Grafana dashboards (spec section 26) into ./dashboards. Re-run after editing this file."""
 import json
 import pathlib
 
@@ -10,7 +9,6 @@ LOKI = {"type": "loki", "uid": "loki"}
 
 
 def panel(pid, title, exprs, x, y, w=12, h=8, unit="short", kind="timeseries", ds=None, stack=False):
-    """exprs: list of (promql, legend)."""
     ds = ds or PROM
     custom = {"fillOpacity": 12, "lineWidth": 2, "showPoints": "never"}
     if stack:

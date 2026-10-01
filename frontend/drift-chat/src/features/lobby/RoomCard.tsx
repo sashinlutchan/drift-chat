@@ -3,7 +3,6 @@ import type { Room } from '@/api/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardTitle } from '@/components/ui/card'
-
 interface Props {
   room: Room
   onOpen: (room: Room) => void
@@ -12,7 +11,6 @@ interface Props {
   onShare: (room: Room) => void
 }
 
-/** One room in the lobby: name, counts, badges and the Join / Open / Rejoin, Pin and Share actions (spec 5.1–5.2). */
 export function RoomCard({ room, onOpen, onJoin, onTogglePin, onShare }: Props) {
   const action = room.joined ? 'Open' : room.left ? 'Rejoin' : 'Join'
   return (

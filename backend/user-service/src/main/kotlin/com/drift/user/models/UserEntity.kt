@@ -7,10 +7,6 @@ import jakarta.persistence.Table
 import java.time.Instant
 import java.util.UUID
 
-/**
- * JPA entity for the `users` table (spec section 18). Regular class, not a data
- * class (spec section 21); equality based on id.
- */
 @Entity
 @Table(name = "users")
 class UserEntity(

@@ -19,11 +19,6 @@ import org.testcontainers.kafka.ConfluentKafkaContainer
 import org.testcontainers.utility.DockerImageName
 import java.time.Instant
 
-/**
- * Boots the full application context against real infrastructure (Postgres, Kafka, Valkey via
- * Testcontainers) — proving Flyway migrations, JPA validation and configuration binding all work.
- * Real feature integration tests are added phase by phase.
- */
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.NONE,
     properties = ["drift.cleanup-interval=500ms", "drift.cleanup-initial-delay=0s", "drift.cleanup-lock-at-least=PT0S"],
@@ -66,7 +61,7 @@ class UserServiceIntegrationTest {
 
     @Test
     fun `application context loads against real infrastructure`() {
-        // Context loaded: Flyway ran, Hibernate validated the schema, Kafka/Valkey beans wired.
+        assertThat(jdbc.queryForObject("SELECT 1", Int::class.java)).isEqualTo(1)
     }
 
     @Test

@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.time.Clock
 
-/** Shared bean wiring: Clock (testable time), JwtSupport and the MinIO client. */
 @Configuration
 @EnableConfigurationProperties(AppProperties::class)
 class BeanConfig {

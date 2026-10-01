@@ -7,7 +7,6 @@ import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
-/** Adapter implementing [IMessageRepository] on top of Spring Data. */
 @Repository
 class MessageRepository(
     private val data: DataRepository,

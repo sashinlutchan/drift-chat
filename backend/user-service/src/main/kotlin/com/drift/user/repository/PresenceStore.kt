@@ -6,10 +6,6 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.UUID
 
-/**
- * Valkey-backed presence (spec sections 13.1 & 18): `presence:{userId}` marker with
- * TTL `PRESENCE_TTL`.
- */
 @Component
 class PresenceStore(
     private val redis: StringRedisTemplate,

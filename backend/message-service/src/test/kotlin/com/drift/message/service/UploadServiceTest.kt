@@ -53,8 +53,6 @@ class UploadServiceTest {
         uploader: UUID = me,
     ) = UploadSession("up-1", room, uploader, "clip.mp4", size, "video/mp4", fileId, "mp-1", chunk, ((size + chunk - 1) / chunk).toInt())
 
-    // ── start ───────────────────────────────────────────────────────────────
-
     @Test
     fun `starting checks the room, opens a multipart upload and stores the session`() {
         every { rooms.access(room, me) } returns RoomAccess.MEMBER
@@ -115,7 +113,45 @@ class UploadServiceTest {
         verify(exactly = 0) { files.start(any(), any(), any(), any(), any()) }
     }
 
-    // ── chunks ──────────────────────────────────────────────────────────────
+    @Test
+    fun `an svg is refused even when it is on the allow-list`() {
+        val permissive =
+            UploadService(
+                files,
+                sessions,
+                messages,
+                rooms,
+                TestSupport.properties(allowed = listOf("image/png", "image/svg+xml")),
+                meters,
+            )
+        every { rooms.access(room, me) } returns RoomAccess.MEMBER
+
+        assertThatThrownBy { permissive.start(me, room, "x.svg", 10, "image/svg+xml") }
+            .isInstanceOf(DomainError.UnsupportedMediaType::class.java)
+        verify(exactly = 0) { files.start(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a 5 GB file is accepted and one byte more is not`() {
+        val big =
+            UploadService(
+                files,
+                sessions,
+                messages,
+                rooms,
+                TestSupport.properties(maxFile = DataSize.ofGigabytes(5)),
+                meters,
+            )
+        every { rooms.access(room, me) } returns RoomAccess.MEMBER
+        every { files.start(any(), any(), any(), any(), any()) } returns StartedUpload(fileId, "mp-1")
+        every { sessions.create(any(), any()) } just runs
+        val limit = 5L * 1024 * 1024 * 1024
+
+        assertThat(big.start(me, room, "big.mp4", limit, "video/mp4").totalChunks).isEqualTo(640)
+        assertThatThrownBy { big.start(me, room, "big.mp4", limit + 1, "video/mp4") }
+            .isInstanceOf(DomainError.PayloadTooLarge::class.java)
+            .hasMessageContaining("5 GB")
+    }
 
     @Test
     fun `a chunk is streamed to file-service as part index+1 and recorded`() {
@@ -182,8 +218,6 @@ class UploadServiceTest {
         assertThatThrownBy { service.status(me, "gone") }.isInstanceOf(DomainError.NotFound::class.java)
     }
 
-    // ── status / resume ─────────────────────────────────────────────────────
-
     @Test
     fun `status reports which chunks arrived so a client can resume`() {
         every { sessions.find("up-1") } returns session()
@@ -194,8 +228,6 @@ class UploadServiceTest {
         assertThat(s.totalChunks).isEqualTo(3)
         assertThat(received).containsExactlyInAnyOrder(0, 2)
     }
-
-    // ── complete ────────────────────────────────────────────────────────────
 
     @Test
     fun `completing assembles the file, creates the media message and clears the session`() {
@@ -243,8 +275,6 @@ class UploadServiceTest {
 
         assertThatThrownBy { service.complete(me, "up-1") }.isInstanceOf(DomainError.UnsupportedMediaType::class.java)
     }
-
-    // ── cancel ──────────────────────────────────────────────────────────────
 
     @Test
     fun `cancelling aborts the multipart upload and forgets the session, and cancelling twice is fine`() {

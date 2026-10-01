@@ -6,18 +6,12 @@ import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-/** One encrypted payload: ciphertext, unique nonce and the key version used. */
 data class EncryptedPayload(
     val ciphertext: ByteArray,
     val nonce: ByteArray,
     val keyVersion: Int,
 )
 
-/**
- * AES-256-GCM encryption for message content (spec sections 18 & 19):
- * unique nonce per message, `key_version` stored to allow key rotation.
- * Keys are supplied via `MESSAGE_ENCRYPTION_KEY`, never hard-coded.
- */
 class MessageCipher(
     private val keys: Map<Int, ByteArray>,
     private val currentKeyVersion: Int,
@@ -58,7 +52,6 @@ class MessageCipher(
         const val KEY_BYTES = 32
         const val TRANSFORMATION = "AES/GCM/NoPadding"
 
-        /** Base64url decode of the MESSAGE_ENCRYPTION_KEY value into a single-key cipher (version 1). */
         fun singleKey(base64Key: String): MessageCipher {
             val key =
                 java.util.Base64

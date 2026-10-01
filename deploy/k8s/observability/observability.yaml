@@ -1,5 +1,3 @@
-# The observability stack in the "observability" namespace (spec sections 25 and 26). Data lives in emptyDir volumes:
-# this is a local stack, and metrics, logs and traces are cheap to lose.
 apiVersion: v1
 kind: ServiceAccount
 metadata: { name: prometheus, namespace: observability }
@@ -29,11 +27,9 @@ kind: Secret
 metadata: { name: grafana-secret, namespace: observability }
 type: Opaque
 stringData:
-  # LOCAL DEVELOPMENT login, same as deploy .env.example
-  GF_SECURITY_ADMIN_USER: admin
+  GF_SECURITY_ADMIN_USER: admin-change-me
   GF_SECURITY_ADMIN_PASSWORD: admin-change-me
 ---
-# ── Prometheus ─────────────────────────────────────────────────────────────────────────────────────────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata: { name: prometheus, namespace: observability }
@@ -66,7 +62,6 @@ spec:
   selector: { app: prometheus }
   ports: [{ name: http, port: 9090, targetPort: http }]
 ---
-# ── Loki ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata: { name: loki, namespace: observability }
@@ -98,7 +93,6 @@ spec:
   selector: { app: loki }
   ports: [{ name: http, port: 3100, targetPort: http }]
 ---
-# ── Tempo ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata: { name: tempo, namespace: observability }
@@ -134,7 +128,6 @@ spec:
     - { name: http, port: 3200, targetPort: http }
     - { name: otlp-grpc, port: 4317, targetPort: otlp-grpc }
 ---
-# ── Alloy ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata: { name: alloy, namespace: observability }
@@ -172,7 +165,6 @@ spec:
     - { name: otlp-grpc, port: 4317, targetPort: otlp-grpc }
     - { name: otlp-http, port: 4318, targetPort: otlp-http }
 ---
-# ── Grafana ────────────────────────────────────────────────────────────────────────────────────────────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata: { name: grafana, namespace: observability }
@@ -190,6 +182,9 @@ spec:
           envFrom: [{ secretRef: { name: grafana-secret } }]
           env:
             - { name: GF_USERS_ALLOW_SIGN_UP, value: "false" }
+            - { name: GF_AUTH_ANONYMOUS_ENABLED, value: "true" }
+            - { name: GF_AUTH_ANONYMOUS_ORG_ROLE, value: Admin }
+            - { name: GF_AUTH_DISABLE_LOGIN_FORM, value: "true" }
             - { name: GF_ANALYTICS_REPORTING_ENABLED, value: "false" }
           readinessProbe: { httpGet: { path: /api/health, port: http }, periodSeconds: 10 }
           resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { memory: 512Mi } }

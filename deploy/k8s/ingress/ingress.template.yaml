@@ -1,8 +1,3 @@
-# ingress-nginx routing (spec sections 13.5 and 25). scripts/deploy.sh replaces __HOST__ and __GRAFANA_HOST__ with the
-# nip.io names built from the minikube IP, so no hosts-file edits are needed. Served over plain HTTP (no certificates).
-#
-# Same rules as the Docker Compose edge: /api/v1/* to the services (prefix removed), /socket.io/ to message-service's
-# socket port with WebSocket timeouts, everything else to the frontend. Chunk uploads stream through unbuffered.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -11,7 +6,6 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$1
-    # UPLOAD_CHUNK_SIZE (8 MB) plus headroom; request buffering off and long timeouts so 1 GB uploads stream through
     nginx.ingress.kubernetes.io/proxy-body-size: 9m
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
@@ -36,7 +30,6 @@ metadata:
   name: drift-socket
   namespace: drift
   annotations:
-    # WebSocket upgrade is automatic in ingress-nginx; these keep long-lived chat connections open
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-buffering: "off"

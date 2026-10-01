@@ -12,15 +12,10 @@ import java.util.UUID
 
 private val log = KotlinLogging.logger {}
 
-/**
- * Kafka consumers (spec sections 13.2 and 17). Both handlers are idempotent — processing an event twice leaves
- * the same state.
- */
 @Component
 class RoomEventListener(
     private val rooms: IRoomService,
 ) {
-    /** message-service reports how many users have a room open; that decides when the idle countdown runs. */
     @KafkaListener(topics = [EventEnvelope.Companion.Topics.ROOM_OCCUPANCY], groupId = "\${spring.kafka.consumer.group-id:room-service}")
     fun onOccupancy(message: String) {
         val event = EventEnvelopeJson.deserialize(message, RoomOccupancyPayload::class.java)

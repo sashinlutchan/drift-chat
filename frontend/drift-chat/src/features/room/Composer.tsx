@@ -4,13 +4,12 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
-import { config } from '@/lib/config'
+import { config, MEDIA_ACCEPT } from '@/lib/config'
 import { formatBytes, typingLabel } from '@/lib/format'
 import { checkFile, startUpload, type UploadHandle } from '@/lib/uploader'
 import { socket } from '@/socket/client'
 import { useUploads } from '@/stores/uploads'
 import type { ChatMessage, Sender } from '@/api/types'
-
 interface Props {
   roomId: string
   typing: Sender[]
@@ -18,25 +17,29 @@ interface Props {
   onSend: (text: string) => void
   onUploaded: (message: ChatMessage) => void
 }
-
 const TYPING_REFRESH_MS = 2500
 const TYPING_IDLE_MS = 3000
 
-/** Text box with Send, Attach, the typing indicator and upload progress with cancel and retry (spec sections 7.4–7.5). */
 export function Composer({ roomId, typing, disabled, onSend, onUploaded }: Props) {
   const [text, setText] = useState('')
   const input = useRef<HTMLTextAreaElement>(null)
   const picker = useRef<HTMLInputElement>(null)
   const lastTyping = useRef(0)
   const idle = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const handles = useRef(new Map<string, { handle: UploadHandle; file: File }>())
+  const handles = useRef(
+    new Map<
+      string,
+      {
+        handle: UploadHandle
+        file: File
+      }
+    >(),
+  )
   const uploads = useUploads((s) => s.items)
   const inRoom = Object.values(uploads).filter((u) => u.roomId === roomId)
-
   const emitTyping = (on: boolean) => {
     socket.emit(on ? 'typing:start' : 'typing:stop', roomId)
   }
-
   const onChange = (value: string) => {
     setText(value)
     clearTimeout(idle.current)
@@ -54,9 +57,7 @@ export function Composer({ roomId, typing, disabled, onSend, onUploaded }: Props
       emitTyping(false)
     }, TYPING_IDLE_MS)
   }
-
   useEffect(() => () => clearTimeout(idle.current), [])
-
   const submit = () => {
     const value = text.trim()
     if (!value || disabled) return
@@ -66,7 +67,6 @@ export function Composer({ roomId, typing, disabled, onSend, onUploaded }: Props
     setText('')
     input.current?.focus()
   }
-
   const begin = (file: File) => {
     const problem = checkFile(file)
     if (problem) return toast.error('Can’t send that file', { description: problem })
@@ -77,22 +77,18 @@ export function Composer({ roomId, typing, disabled, onSend, onUploaded }: Props
         toast.error('Upload failed', { description: error.message })
     })
   }
-
   const retry = (id: string) => {
     const entry = handles.current.get(id)
     if (!entry) return
     useUploads.getState().remove(id)
     handles.current.delete(id)
-    begin(entry.file) // resumes from the chunks the server already has
+    begin(entry.file)
   }
-
   const cancel = (id: string) => {
     handles.current.get(id)?.handle.cancel()
     handles.current.delete(id)
   }
-
   const label = typingLabel(typing.map((t) => t.name))
-
   return (
     <div className="border-t bg-background px-4 pt-2 pb-4">
       <div
@@ -155,7 +151,7 @@ export function Composer({ roomId, typing, disabled, onSend, onUploaded }: Props
         <input
           ref={picker}
           type="file"
-          accept="image/*,audio/*,video/*"
+          accept={MEDIA_ACCEPT}
           className="sr-only"
           aria-label="Attach a file"
           data-testid="attach-input"

@@ -5,7 +5,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.bind.DefaultValue
 import java.time.Duration
 
-/** Typed, validated configuration for room-service (spec section 20). */
 @ConfigurationProperties("drift")
 data class AppProperties(
     @field:NotBlank val jwtSecret: String,

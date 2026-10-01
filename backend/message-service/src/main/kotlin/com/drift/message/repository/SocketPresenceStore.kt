@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.UUID
 
-/** Valkey-backed [ISocketPresence]: a sorted set `user:sockets:{userId}` of session ids scored by last heartbeat. */
 @Component
 class SocketPresenceStore(
     private val redis: StringRedisTemplate,

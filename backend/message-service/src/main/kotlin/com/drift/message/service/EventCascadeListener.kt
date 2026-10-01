@@ -16,11 +16,6 @@ private val log = KotlinLogging.logger {}
 
 private const val CASCADE_GROUP = "\${spring.kafka.consumer.group-id:message-service}"
 
-/**
- * Kafka consumers that change **stored data**, so they share one consumer group (spec sections 13.3 and 17): each
- * event is handled once by the service as a whole, and not lost if every pod happens to be down (`earliest`). All
- * handlers are idempotent.
- */
 @Component
 class EventCascadeListener(
     private val messages: IMessageService,
@@ -38,7 +33,6 @@ class EventCascadeListener(
         log.info { "user.deleted $userId: ${messages.markSenderDeleted(userId)} messages now show \"Deleted user\"" }
     }
 
-    /** "Sipho joined the room" as an inline notice (spec section 7.2). */
     @KafkaListener(topics = [EventEnvelope.Companion.Topics.MEMBER_JOINED], groupId = CASCADE_GROUP)
     fun onMemberJoined(json: String) = notice(json, "joined")
 
@@ -51,7 +45,6 @@ class EventCascadeListener(
     ) {
         val payload = EventEnvelopeJson.deserialize(json, MemberEventPayload::class.java).payload
         val userId = UUID.fromString(payload.userId)
-        // A user who was deleted has no name left to show, so there is no notice
         val name = users.profiles(listOf(userId))[userId]?.name ?: return
         messages.sendSystem(UUID.fromString(payload.roomId), userId, "$name $verb the room")
     }

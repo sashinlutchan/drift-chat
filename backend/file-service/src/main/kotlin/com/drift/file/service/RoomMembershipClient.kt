@@ -9,18 +9,19 @@ import com.drift.grpc.room.v1.RoomServiceGrpcKt
 import io.grpc.ManagedChannel
 import io.grpc.StatusException
 import io.grpc.StatusRuntimeException
+import io.micrometer.observation.ObservationRegistry
 import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Component
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-/** Inter-service client for room-service `IsMember` (spec section 13.4), behind [IRoomMembership]. */
 @Component
 class RoomMembershipClient(
     properties: AppProperties,
+    observations: ObservationRegistry = ObservationRegistry.NOOP,
 ) : IRoomMembership {
-    private val channel: ManagedChannel = GrpcChannels.create(properties.roomServiceAddr)
+    private val channel: ManagedChannel = GrpcChannels.create(properties.roomServiceAddr, observations)
     private val stub = RoomServiceGrpcKt.RoomServiceCoroutineStub(channel)
 
     override fun isMember(

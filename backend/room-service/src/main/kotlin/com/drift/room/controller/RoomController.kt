@@ -22,10 +22,6 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
-/**
- * REST API for rooms (spec section 14; nginx exposes these under `/api/v1`). Thin: it only turns HTTP into
- * service calls and back — every rule lives in [IRoomService].
- */
 @RestController
 class RoomController(
     private val rooms: IRoomService,

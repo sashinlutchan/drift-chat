@@ -1,4 +1,3 @@
-# Tempo (spec section 26): receives OTLP traces from Grafana Alloy, keeps them on local disk for 3 days.
 server:
   http_listen_port: 3200
 

@@ -6,11 +6,8 @@ import { errorMessage, problemOf } from '@/api/client'
 import { roomsApi } from '@/api/rooms'
 import { Button } from '@/components/ui/button'
 import { JoinRoomDialog } from '@/features/lobby/JoinRoomDialog'
-
-/** A shared room link `/r/:slug` (spec section 6): member → straight in, not a member → join dialog, deleted → message. */
 export function ShareLinkPage() {
   const { slug = '' } = useParams()
-  // keyed by slug so opening a different link starts with a fresh dialog
   return <ShareLinkScreen key={slug} slug={slug} />
 }
 
@@ -22,7 +19,6 @@ function ShareLinkScreen({ slug }: { slug: string }) {
     retry: false,
   })
   const [dialog, setDialog] = useState(true)
-
   if (room.isPending) {
     return (
       <div className="grid h-full place-items-center" role="status" aria-label="Opening link">
@@ -51,7 +47,6 @@ function ShareLinkScreen({ slug }: { slug: string }) {
     )
   }
   if (room.data.joined) return <Navigate to={`/rooms/${room.data.id}`} replace />
-
   return (
     <div className="grid h-full place-items-center px-4 text-center">
       <div className="max-w-sm">

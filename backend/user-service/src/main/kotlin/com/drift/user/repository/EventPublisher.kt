@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Instant
 
-/** Kafka-backed event publisher implementing the domain port [IEventPublisher]. */
 @Component
 class EventPublisher(
     private val kafka: KafkaTemplate<String, String>,

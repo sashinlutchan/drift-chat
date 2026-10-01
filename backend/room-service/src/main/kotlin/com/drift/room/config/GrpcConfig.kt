@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.grpc.server.GlobalServerInterceptor
 
-/** Interceptors applied to every gRPC service: request id + logging, then JWT metadata verification. */
 @Configuration
 class GrpcConfig {
     @Bean

@@ -18,14 +18,12 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createRoomSchema, type CreateRoomValues } from '@/lib/validation'
-
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   onCreated: (room: Room) => void
 }
 
-/** A room name (1–50 characters); the creator becomes a member and is taken into the room (spec section 5.3). */
 export function CreateRoomDialog({ open, onOpenChange, onCreated }: Props) {
   const queryClient = useQueryClient()
   const {
@@ -37,7 +35,6 @@ export function CreateRoomDialog({ open, onOpenChange, onCreated }: Props) {
     resolver: zodResolver(createRoomSchema),
     defaultValues: { name: '' },
   })
-
   const create = useMutation({
     mutationFn: (values: CreateRoomValues) => roomsApi.create(values.name),
     onSuccess: (room) => {
@@ -50,7 +47,6 @@ export function CreateRoomDialog({ open, onOpenChange, onCreated }: Props) {
     onError: (error) =>
       toast.error('Could not create the room', { description: errorMessage(error) }),
   })
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>

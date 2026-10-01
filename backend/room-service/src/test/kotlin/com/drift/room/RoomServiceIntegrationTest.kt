@@ -24,10 +24,6 @@ import org.testcontainers.utility.DockerImageName
 import java.time.Instant
 import java.util.UUID
 
-/**
- * Real Postgres + Kafka: proves the JPA mapping and Flyway schema, pin ordering, join/rejoin, the idle-room
- * countdown driven by Kafka `room.occupancy` events, the ShedLock-guarded cleanup job, and user-deleted cascades.
- */
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.NONE,
     properties = [
@@ -95,13 +91,11 @@ class RoomServiceIntegrationTest {
         assertThat(created.memberCount).isEqualTo(1)
         assertThat(created.onlineCount).isEqualTo(1)
 
-        // A second user sees it, isn't a member, can search for it, then joins.
         val seen = rooms.list(friend, "integration").single { it.room.id == created.room.id }
         assertThat(seen.joined).isFalse()
         assertThat(rooms.join(created.room.id, friend).memberCount).isEqualTo(2)
         assertThat(rooms.isMember(created.room.id, friend)).isTrue()
 
-        // Leaving keeps the row but ends membership; joining again is a rejoin.
         rooms.leave(created.room.id, friend)
         assertThat(rooms.isMember(created.room.id, friend)).isFalse()
         assertThat(rooms.list(friend, "integration").single { it.room.id == created.room.id }.memberCount).isEqualTo(1)
@@ -109,6 +103,26 @@ class RoomServiceIntegrationTest {
         assertThat(rooms.join(created.room.id, friend).joined).isTrue()
 
         assertThat(rooms.bySlug(created.room.slug, me).room.id).isEqualTo(created.room.id)
+    }
+
+    @Test
+    fun `listing every room works without a search term - the lobby used to return 500`() {
+        val created = rooms.create(me, "No Search Room").room
+
+        val all = rooms.list(me, null)
+        val blank = rooms.list(me, "   ")
+
+        assertThat(all.map { it.room.id }).contains(created.id)
+        assertThat(blank.map { it.room.id }).contains(created.id)
+    }
+
+    @Test
+    fun `search is case-insensitive and matches part of a name`() {
+        val created = rooms.create(me, "Braai Weekend").room
+
+        assertThat(rooms.list(me, "braai").map { it.room.id }).contains(created.id)
+        assertThat(rooms.list(me, "END").map { it.room.id }).contains(created.id)
+        assertThat(rooms.list(me, "zzz-nothing-like-this")).isEmpty()
     }
 
     @Test
@@ -122,7 +136,7 @@ class RoomServiceIntegrationTest {
 
         val mine = rooms.list(me, "Pin ").map { it.room.name }
         assertThat(mine.take(3)).containsExactly("Pin B", "Pin A", "Pin C")
-        assertThat(rooms.list(friend, "Pin ").none { it.pinnedAt != null }).isTrue() // pins are per user
+        assertThat(rooms.list(friend, "Pin ").none { it.pinnedAt != null }).isTrue()
 
         rooms.unpin(b.id, me)
         assertThat(
@@ -137,7 +151,7 @@ class RoomServiceIntegrationTest {
     @Test
     fun `occupancy events from Kafka start and stop the idle countdown`() {
         val room = rooms.create(me, "Countdown").room
-        assertThat(emptySince(room.id)).isNotNull() // brand new rooms start their countdown
+        assertThat(emptySince(room.id)).isNotNull()
 
         event("room.occupancy", RoomOccupancyPayload(room.id.toString(), 2))
         waitFor { emptySince(room.id) == null }
@@ -160,7 +174,6 @@ class RoomServiceIntegrationTest {
         assertThat(rooms.find(stale.id)).isNull()
         assertThat(rooms.find(fresh.id)).isNotNull()
         assertThat(jdbc.queryForObject("select count(*) from shedlock where name = 'room-cleanup'", Long::class.java)).isEqualTo(1L)
-        // Members and pins go with the room
         assertThat(jdbc.queryForObject("select count(*) from room_members where room_id = ?", Long::class.java, stale.id)).isZero()
     }
 

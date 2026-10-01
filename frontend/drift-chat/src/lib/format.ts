@@ -1,5 +1,4 @@
 import { format, formatDistanceToNowStrict, isToday, isYesterday } from 'date-fns'
-
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   const units = ['KB', 'MB', 'GB', 'TB']
@@ -48,11 +47,12 @@ export function initials(name: string): string {
     .map((p) => p[0]?.toUpperCase())
     .join('')
 }
-
 const URL_RE = /(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"])/g
 
-/** Splits text into plain strings and URLs so the UI can render links without innerHTML. */
-export function splitLinks(text: string): { text: string; url: boolean }[] {
+export function splitLinks(text: string): {
+  text: string
+  url: boolean
+}[] {
   return text
     .split(URL_RE)
     .filter((p) => p !== '')

@@ -4,7 +4,6 @@ import com.drift.message.interfaces.ISocketConnection
 import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 
-/** A fake socket that records what it was sent. */
 class TestConnection(
     override val userId: UUID = UUID.randomUUID(),
     override val sessionId: String = UUID.randomUUID().toString(),

@@ -4,10 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 import java.util.UUID
 
-/**
- * Versioned event envelope for every Kafka message (spec section 17):
- * event id, type, version, timestamp and trace context.
- */
 data class EventEnvelope<T>(
     @JsonProperty("id") val id: String = UUID.randomUUID().toString(),
     @JsonProperty("type") val type: String,
@@ -19,7 +15,6 @@ data class EventEnvelope<T>(
     companion object {
         const val SCHEMA_VERSION = 1
 
-        /** Kafka topic names (spec section 17). */
         object Topics {
             const val USER_DELETED = "user.deleted"
             const val USER_UPDATED = "user.updated"

@@ -11,18 +11,19 @@ import com.drift.message.models.UserProfile
 import io.grpc.ManagedChannel
 import io.grpc.StatusException
 import io.grpc.StatusRuntimeException
+import io.micrometer.observation.ObservationRegistry
 import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Component
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-/** gRPC client for user-service (spec section 13.3), behind [IUserDirectory]. Every call has a deadline. */
 @Component
 class UserDirectoryClient(
     properties: AppProperties,
+    observations: ObservationRegistry = ObservationRegistry.NOOP,
 ) : IUserDirectory {
-    private val channel: ManagedChannel = GrpcChannels.create(properties.userServiceAddr)
+    private val channel: ManagedChannel = GrpcChannels.create(properties.userServiceAddr, observations)
     private val stub = UserServiceGrpcKt.UserServiceCoroutineStub(channel)
 
     override fun profiles(ids: Collection<UUID>): Map<UUID, UserProfile> {

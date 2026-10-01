@@ -27,11 +27,6 @@ import java.util.UUID
 private const val RELAY_GROUP = "#{'message-service-relay-' + @podIdentity.id}"
 private const val LATEST = "auto.offset.reset=latest"
 
-/**
- * Turns Kafka events into Socket.IO events for the sockets on **this pod** (spec sections 13.3, 15 and 17). Every pod
- * reads under its own consumer group, so an event reaches every pod and each one serves its own sockets. That is what
- * makes fan-out work across replicas. Old events are not replayed to a fresh pod (`latest`).
- */
 @Component
 class EventRelayListener(
     private val hub: IConnectionHub,
@@ -92,7 +87,6 @@ class EventRelayListener(
         hub.sendToAll("room:updated", EventEnvelopeJson.deserialize(json, RoomEventPayload::class.java).payload)
     }
 
-    /** The room is gone: everyone hears about it and sockets that had it open are taken out of it. */
     @KafkaListener(topics = [EventEnvelope.Companion.Topics.ROOM_DELETED], groupId = RELAY_GROUP, properties = [LATEST])
     fun onRoomDeleted(json: String) {
         val payload = EventEnvelopeJson.deserialize(json, RoomDeletedPayload::class.java).payload
@@ -107,7 +101,6 @@ class EventRelayListener(
         hub.sendToRoom(UUID.fromString(payload.roomId), "member:joined", payload)
     }
 
-    /** Somebody left the room: the others are told, and the leaver's sockets stop receiving its messages. */
     @KafkaListener(topics = [EventEnvelope.Companion.Topics.MEMBER_LEFT], groupId = RELAY_GROUP, properties = [LATEST])
     fun onMemberLeft(json: String) {
         val payload = EventEnvelopeJson.deserialize(json, MemberEventPayload::class.java).payload

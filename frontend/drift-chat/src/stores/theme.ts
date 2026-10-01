@@ -1,7 +1,5 @@
 import { create } from 'zustand'
-
 export type ThemeChoice = 'light' | 'dark' | 'system'
-
 const KEY = 'drift-theme'
 
 function read(): ThemeChoice {
@@ -13,7 +11,6 @@ function read(): ThemeChoice {
   }
 }
 
-/** Applies the choice to <html>. "system" follows the operating system. */
 export function applyTheme(choice: ThemeChoice) {
   const dark =
     choice === 'dark' || (choice === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
@@ -30,9 +27,7 @@ export const useTheme = create<ThemeState>((set) => ({
   setChoice: (choice) => {
     try {
       localStorage.setItem(KEY, choice)
-    } catch {
-      // storage can be unavailable (private mode); the theme still applies for this visit
-    }
+    } catch {}
     applyTheme(choice)
     set({ choice })
   },

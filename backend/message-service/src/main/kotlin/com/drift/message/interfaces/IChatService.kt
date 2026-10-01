@@ -2,7 +2,6 @@ package com.drift.message.interfaces
 
 import java.util.UUID
 
-/** What a connected socket can do (spec section 15 client → server events); implemented by `service/ChatService`. */
 interface IChatService {
     fun connected(connection: ISocketConnection)
 
@@ -18,7 +17,6 @@ interface IChatService {
         roomId: UUID,
     )
 
-    /** Returns the `message:ack` payload for the sender. */
     fun sendMessage(
         connection: ISocketConnection,
         roomId: UUID,
@@ -34,6 +32,5 @@ interface IChatService {
 
     fun heartbeat(connection: ISocketConnection)
 
-    /** Drops occupancy entries whose socket stopped heartbeating (a crashed pod) and announces rooms that emptied. */
     fun sweepOccupancy(): Int
 }

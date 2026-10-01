@@ -21,11 +21,6 @@ import java.util.UUID
 
 private val log = KotlinLogging.logger {}
 
-/**
- * What a connected socket can do (spec sections 7 and 15). Enforces the rules — membership before entering a room,
- * being inside a room before sending or typing — and keeps occupancy and presence in step so rooms get their idle
- * countdown and users their online dot.
- */
 @Service
 class ChatService(
     private val hub: IConnectionHub,
@@ -44,7 +39,7 @@ class ChatService(
     }
 
     override fun disconnected(connection: ISocketConnection) {
-        if (hub.find(connection.sessionId) == null) return // already cleaned up (for example during shutdown)
+        if (hub.find(connection.sessionId) == null) return
         val open = hub.unregister(connection.sessionId)
         open.forEach { roomId -> leaveRoomBookkeeping(connection, roomId) }
         if (presence.disconnect(connection.userId, connection.sessionId, clock.instant())) reportPresence(connection.userId, false)
@@ -79,7 +74,6 @@ class ChatService(
     ): Map<String, Any?> {
         requireInside(connection, roomId)
         val message = messages.sendText(roomId, connection.userId, text, clientId)
-        // Sending ends "typing…"
         typing.stop(roomId, connection.userId)
         typing.announce(roomId)
         return mapOf("clientId" to clientId, "id" to message.id.toString(), "createdAt" to message.createdAt.toString())
@@ -133,7 +127,6 @@ class ChatService(
         EventEnvelope(type = "room.occupancy", timestamp = clock.instant(), payload = RoomOccupancyPayload(roomId.toString(), count)),
     )
 
-    /** Presence is best effort: a slow user-service must never break chat. */
     private fun reportPresence(
         userId: UUID,
         online: Boolean,

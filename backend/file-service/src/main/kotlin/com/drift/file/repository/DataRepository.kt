@@ -5,7 +5,6 @@ import com.drift.file.models.FileKind
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 
-/** Spring Data repository — used only by [FileRepository], never by the service layer. */
 interface DataRepository : JpaRepository<FileEntity, UUID> {
     fun findByRoomId(roomId: UUID): List<FileEntity>
 

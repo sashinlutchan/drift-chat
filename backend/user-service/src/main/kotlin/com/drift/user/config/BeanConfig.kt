@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.time.Clock
 
-/** Shared bean wiring: Clock (for testable TTL logic) and JwtSupport. */
 @Configuration
 @EnableConfigurationProperties(AppProperties::class)
 class BeanConfig {

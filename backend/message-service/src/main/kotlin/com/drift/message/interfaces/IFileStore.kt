@@ -5,7 +5,6 @@ import com.drift.message.models.StartedUpload
 import java.io.InputStream
 import java.util.UUID
 
-/** file-service over gRPC (spec section 13.6). Chunks are streamed through, never held whole. */
 interface IFileStore {
     fun start(
         uploaderId: UUID,
@@ -15,7 +14,6 @@ interface IFileStore {
         sizeBytes: Long,
     ): StartedUpload
 
-    /** Streams [length] bytes of [content] to MinIO as multipart part [partNumber] (1-based) and returns its etag. */
     fun uploadPart(
         upload: StartedUpload,
         partNumber: Int,

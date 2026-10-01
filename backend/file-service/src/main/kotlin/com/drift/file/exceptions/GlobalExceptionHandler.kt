@@ -16,14 +16,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 private val log = KotlinLogging.logger {}
 
-/**
- * The one place errors become responses (spec sections 14 & 21): RFC 9457 Problem Details
- * (`application/problem+json`) with an extra machine-readable `code` field.
- *
- * Known [DomainError]s keep their own status; Spring MVC's standard exceptions (bad request bodies,
- * unsupported methods…) are handled by the base class; anything unexpected is logged with its stack trace
- * and answered with a generic 500 that never leaks internals.
- */
 @RestControllerAdvice
 class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(DomainError::class)
@@ -58,7 +50,6 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problem)
     }
 
-    /** Adds the `code` field to every standard Spring MVC problem response. */
     override fun handleExceptionInternal(
         ex: Exception,
         body: Any?,

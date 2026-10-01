@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.UUID
 
-/** Valkey-backed [IDedupStore]: `SET NX` on `msg:client:{userId}:{clientId}`. */
 @Component
 class DedupStore(
     private val redis: StringRedisTemplate,

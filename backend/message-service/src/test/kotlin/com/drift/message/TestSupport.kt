@@ -5,7 +5,6 @@ import com.drift.message.config.AppProperties
 import org.springframework.util.unit.DataSize
 import java.time.Duration
 
-/** Builders shared by the unit tests. */
 object TestSupport {
     val cipher = MessageCipher(mapOf(1 to ByteArray(32) { it.toByte() }), 1)
 
@@ -15,6 +14,7 @@ object TestSupport {
         chunk: DataSize = DataSize.ofMegabytes(8),
         pageSize: Int = 50,
         allowedOrigins: List<String> = listOf("https://drift.test"),
+        allowed: List<String> = listOf("image/png", "video/mp4", "audio/mpeg"),
     ) = AppProperties(
         jwtSecret = "x".repeat(32),
         sessionCookieName = "drift_session",
@@ -26,7 +26,7 @@ object TestSupport {
         uploadChunkSize = chunk,
         uploadSessionTtl = Duration.ofHours(1),
         historyPageSize = pageSize,
-        allowedMimeTypes = listOf("image/png", "video/mp4", "audio/mpeg"),
+        allowedMimeTypes = allowed,
         socketStaleAfter = Duration.ofSeconds(90),
         userServiceAddr = "u:1",
         roomServiceAddr = "r:1",

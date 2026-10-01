@@ -14,8 +14,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { usernameSchema, signUpSchema, type SignUpValues } from '@/lib/validation'
 import { useAuth } from '@/stores/auth'
-
-/** Only ever send people back into the app, never to another site. */
 function safeNext(next: string | null): string {
   return next && next.startsWith('/') && !next.startsWith('//') ? next : '/'
 }
@@ -29,7 +27,6 @@ function useDebounced<T>(value: T, ms: number): T {
   return debounced
 }
 
-/** Sign up with a username, name, email and avatar; no password (spec section 3.1). */
 export function SignUpPage() {
   const status = useAuth((s) => s.status)
   const sessionEnded = useAuth((s) => s.sessionEnded)
@@ -38,7 +35,6 @@ export function SignUpPage() {
   const [params] = useSearchParams()
   const next = safeNext(params.get('next'))
   const fileInput = useRef<HTMLInputElement>(null)
-
   const form = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
     mode: 'onChange',
@@ -52,7 +48,6 @@ export function SignUpPage() {
     control,
     formState: { errors, isSubmitting },
   } = form
-
   const username = useWatch({ control, name: 'username' })
   const avatar = useWatch({ control, name: 'avatar' }) as File | undefined
   const preview = useMemo(
@@ -60,21 +55,17 @@ export function SignUpPage() {
     [avatar],
   )
   useEffect(() => () => (preview ? URL.revokeObjectURL(preview) : undefined), [preview])
-
-  // Live "is this username free?" once the format is valid (spec section 3.1)
   const candidate = useDebounced(username, 350)
   const formatOk = usernameSchema.safeParse(candidate).success
   const availability = useQuery({
     queryKey: ['username-available', candidate],
     queryFn: () => usersApi.checkUsername(candidate),
     enabled: formatOk,
-    staleTime: 10_000,
+    staleTime: 10000,
     retry: false,
   })
   const taken = formatOk && availability.data === false
-
   if (status === 'signed-in') return <Navigate to={next} replace />
-
   const onSubmit = handleSubmit(async (values) => {
     if (taken) return setError('username', { message: 'This username is taken.' })
     try {
@@ -91,7 +82,6 @@ export function SignUpPage() {
       else toast.error('Could not sign up', { description: problem.detail })
     }
   })
-
   return (
     <div className="relative grid min-h-dvh place-items-center bg-[radial-gradient(60%_50%_at_50%_0%,color-mix(in_oklab,var(--primary)_14%,transparent),transparent)] px-4 py-10">
       <div className="absolute top-4 right-4">

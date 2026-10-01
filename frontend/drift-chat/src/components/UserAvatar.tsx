@@ -3,18 +3,15 @@ import { fileUrl } from '@/lib/config'
 import { initials } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useIsOnline } from '@/stores/presence'
-
 interface Props {
   name: string
   avatarFileId?: string | null
-  /** Pass a user id (and `online`) to show the live Online / Offline dot. */
   userId?: string | null
   online?: boolean
   showStatus?: boolean
   className?: string
 }
 
-/** A user's avatar with an optional green/grey presence dot (spec section 4). */
 export function UserAvatar({
   name,
   avatarFileId,

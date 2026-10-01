@@ -7,11 +7,6 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.UUID
 
-/**
- * Valkey-backed [IOccupancyStore]. Each open socket is a member `userId|sessionId` of the sorted set
- * `room:occupancy:{roomId}`, scored by its last heartbeat, so entries from a crashed pod simply go stale
- * instead of keeping a room "occupied" forever. `rooms:occupied` lists rooms that have any entries.
- */
 @Component
 class OccupancyStore(
     private val redis: StringRedisTemplate,

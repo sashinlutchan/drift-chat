@@ -1,4 +1,3 @@
--- files_db initial schema (spec section 18)
 CREATE TABLE files (
     id          UUID         PRIMARY KEY,
     owner_id    UUID         NULL,

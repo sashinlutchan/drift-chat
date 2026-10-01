@@ -14,7 +14,6 @@ import { CreateRoomDialog } from './CreateRoomDialog'
 import { JoinByLinkDialog } from './JoinByLinkDialog'
 import { JoinRoomDialog } from './JoinRoomDialog'
 import { RoomCard } from './RoomCard'
-
 function useDebounced<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value)
   useEffect(() => {
@@ -24,7 +23,6 @@ function useDebounced<T>(value: T, ms: number): T {
   return debounced
 }
 
-/** The main screen: every room, pinned first, live-updating (spec section 5). */
 export function LobbyPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -33,22 +31,18 @@ export function LobbyPage() {
   const [joining, setJoining] = useState<Room | null>(null)
   const [creating, setCreating] = useState(false)
   const [byLink, setByLink] = useState(false)
-
   const rooms = useQuery({
     queryKey: ['rooms', debounced],
     queryFn: () => roomsApi.list(debounced),
     placeholderData: (previous) => previous,
   })
-
   const togglePin = useMutation({
     mutationFn: (room: Room) => (room.pinned ? roomsApi.unpin(room.id) : roomsApi.pin(room.id)),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['rooms'] }),
     onError: (error) =>
       toast.error('Could not update the pin', { description: errorMessage(error) }),
   })
-
   const openRoom = (room: Room) => void navigate(`/rooms/${room.id}`)
-
   const openBySlug = async (slug: string) => {
     try {
       const room = await roomsApi.bySlug(slug)
@@ -58,7 +52,6 @@ export function LobbyPage() {
       toast.error('This room no longer exists')
     }
   }
-
   return (
     <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-6 overflow-y-auto px-4 py-8">
       <div className="flex flex-wrap items-center gap-3">
@@ -136,7 +129,6 @@ export function LobbyPage() {
       <CreateRoomDialog
         open={creating}
         onOpenChange={setCreating}
-        // the room shows the share-link dialog when it opens (spec section 5.3)
         onCreated={(room) => void navigate(`/rooms/${room.id}`, { state: { share: true } })}
       />
       <JoinByLinkDialog

@@ -13,10 +13,6 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * Turns messages into what clients see, filling in the sender from user-service. Profiles are cached for a short
- * time (spec section 18) and dropped when a `user.updated` / `user.deleted` event arrives.
- */
 @Component
 class MessageRenderer(
     private val users: IUserDirectory,

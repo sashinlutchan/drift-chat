@@ -4,8 +4,6 @@ import { Navigate, Outlet, useLocation } from 'react-router'
 import { ensureCsrfCookie, problemOf, setSessionEndedListener } from '@/api/client'
 import { usersApi } from '@/api/users'
 import { useAuth } from '@/stores/auth'
-
-/** Runs once at start-up: fetch the CSRF cookie, then ask `GET /users/me` whether a session already exists. */
 export function AuthBootstrap({ children }: { children: ReactNode }) {
   useEffect(() => {
     setSessionEndedListener(() => useAuth.getState().endSession())
@@ -17,7 +15,6 @@ export function AuthBootstrap({ children }: { children: ReactNode }) {
         if (!cancelled) useAuth.getState().signIn(user)
       } catch (error) {
         if (cancelled) return
-        // A 401 is the normal "no session yet"; anything else (server down) also lands on sign-up, which can retry
         void problemOf(error)
         useAuth.getState().signedOut()
       }
@@ -38,7 +35,6 @@ export function Splash() {
   )
 }
 
-/** Keeps signed-out visitors away from the app and remembers where they were going. */
 export function RequireAuth() {
   const status = useAuth((s) => s.status)
   const location = useLocation()

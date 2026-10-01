@@ -40,7 +40,6 @@ import java.util.UUID
 
 @WebMvcTest(controllers = [MessageController::class, UploadController::class])
 @Import(SecurityBeans::class)
-// A developer's local .env must never change what the tests sign and verify with
 @TestPropertySource(properties = ["JWT_SECRET=test-secret-key-that-is-32-bytes-long!"])
 class MessageControllersTest {
     @Autowired lateinit var mockMvc: MockMvc
@@ -70,8 +69,6 @@ class MessageControllersTest {
         )
 
     private val upload = UploadSession("up-1", room, userId, "clip.mp4", 12_000_000, "video/mp4", UUID.randomUUID(), "mp-1", 5_242_880, 3)
-
-    // ── history ─────────────────────────────────────────────────────────────
 
     @Test
     fun `history needs a session`() {
@@ -106,8 +103,6 @@ class MessageControllersTest {
                 jsonPath("$.code") { value("FORBIDDEN") }
             }
     }
-
-    // ── uploads ─────────────────────────────────────────────────────────────
 
     @Test
     fun `starting an upload needs the csrf token and returns the chunk plan`() {

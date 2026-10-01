@@ -69,7 +69,7 @@ class AvatarUploaderTest {
         assertThat(header.kind).isEqualTo(FileKind.FILE_KIND_AVATAR)
         assertThat(header.declaredMimeType).isEqualTo("image/png")
         assertThat(received.drop(1).sumOf { it.chunk.size() }).isEqualTo(bytes.size)
-        assertThat(received.size).isGreaterThan(2) // chunked, not one big message
+        assertThat(received.size).isGreaterThan(2)
     }
 
     @Test

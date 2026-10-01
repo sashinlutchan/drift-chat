@@ -10,8 +10,6 @@ spring:
       enabled: true
   autoconfigure:
     exclude:
-      # Spring gRPC would otherwise demand HTTP Basic / bearer credentials on every gRPC call. Service-to-service calls
-      # stay on the private network and carry the user's JWT in metadata only where needed (JwtServerInterceptor).
       - org.springframework.boot.grpc.server.autoconfigure.security.GrpcServerSecurityAutoConfiguration
       - org.springframework.boot.grpc.server.autoconfigure.security.GrpcServerOAuth2ResourceServerAutoConfiguration
   grpc:
@@ -21,8 +19,8 @@ spring:
         enabled: true
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/files_db}
-    username: ${DATABASE_USERNAME:drift}
-    password: ${DATABASE_PASSWORD:drift}
+    username: ${DATABASE_USERNAME:admin-change-me}
+    password: ${DATABASE_PASSWORD:admin-change-me}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -77,14 +75,11 @@ management:
   otlp:
     metrics:
       export:
-        # metrics are scraped by Prometheus (/actuator/prometheus), not pushed
         enabled: false
 
 logging:
   level:
     root: ${LOG_LEVEL:INFO}
-  # Spring Boot's built-in structured logging: one JSON object per line (Loki/Alloy friendly).
-  # Trace and span ids from Micrometer Tracing are included automatically via MDC.
   structured:
     format:
       console: ${LOG_FORMAT:logstash}
@@ -99,9 +94,9 @@ drift:
   room-service-addr: ${ROOM_SERVICE_ADDR:localhost:9082}
   storage:
     minio-endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
-    minio-access-key: ${MINIO_ACCESS_KEY:minioadmin}
-    minio-secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    minio-access-key: ${MINIO_ACCESS_KEY:admin-change-me}
+    minio-secret-key: ${MINIO_SECRET_KEY:admin-change-me}
     minio-bucket-avatars: ${MINIO_BUCKET_AVATARS:drift-avatars}
     minio-bucket-media: ${MINIO_BUCKET_MEDIA:drift-media}
-    max-file-size: ${MAX_FILE_SIZE:1GB}
-    allowed-mime-types: ${ALLOWED_MIME_TYPES:image/jpeg,image/png,image/webp,audio/mpeg,audio/ogg,audio/wav,audio/webm,audio/mp4,video/mp4,video/webm}
+    max-file-size: ${MAX_FILE_SIZE:5GB}
+    allowed-mime-types: ${ALLOWED_MIME_TYPES:image/jpeg,image/png,image/gif,image/webp,image/avif,image/bmp,audio/mpeg,audio/ogg,audio/wav,audio/webm,audio/mp4,audio/aac,audio/flac,video/mp4,video/webm,video/ogg,video/quicktime}

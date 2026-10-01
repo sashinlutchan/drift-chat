@@ -1,10 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
-
 afterEach(() => cleanup())
-
-// jsdom doesn't implement these; the UI uses them
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: (query: string) => ({
@@ -21,6 +18,7 @@ Object.defineProperty(window, 'matchMedia', {
 window.HTMLElement.prototype.scrollTo =
   vi.fn() as unknown as typeof window.HTMLElement.prototype.scrollTo
 window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
 class ResizeObserverStub {
   observe() {}
   unobserve() {}

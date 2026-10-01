@@ -1,6 +1,5 @@
 import { api } from './client'
 import type { Member, Room, RoomInfo } from './types'
-
 export const roomsApi = {
   list: (search?: string) =>
     api.get<Room[]>('/rooms', { params: search ? { search } : undefined }).then((r) => r.data),

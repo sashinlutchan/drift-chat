@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
-/** `GET /messages` (nginx exposes it as `/api/v1/messages`), spec section 14: paginated history, newest first. */
 @RestController
 class MessageController(
     private val messages: IMessageService,
@@ -29,6 +28,5 @@ class MessageController(
     }
 }
 
-/** The signed-in user's id from the session JWT. */
 internal fun userId(jwt: Jwt): UUID =
     runCatching { UUID.fromString(jwt.subject) }.getOrElse { throw DomainError.Unauthorized("Invalid session.") }

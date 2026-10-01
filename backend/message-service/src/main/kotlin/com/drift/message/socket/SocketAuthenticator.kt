@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.UUID
 
-/** The outcome of checking a Socket.IO handshake. */
 sealed interface SocketAuth {
     data class Accepted(
         val userId: UUID,
@@ -18,11 +17,6 @@ sealed interface SocketAuth {
     ) : SocketAuth
 }
 
-/**
- * Checks a WebSocket handshake before any connection exists (spec sections 13.3 and 19): the `Origin` must be on the
- * allow-list (protection against cross-site WebSocket hijacking) and the `drift_session` cookie must hold a valid,
- * unexpired JWT. Nothing goes in the Socket.IO `auth` payload.
- */
 @Component
 class SocketAuthenticator(
     private val jwt: JwtSupport,

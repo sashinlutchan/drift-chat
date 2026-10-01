@@ -4,7 +4,6 @@ import com.drift.user.models.User
 import java.time.Instant
 import java.util.UUID
 
-/** Public profile DTO — never contains the email of other users (spec section 3.5). */
 data class UserDto(
     val id: UUID,
     val username: String,
@@ -20,7 +19,6 @@ data class UserDto(
     }
 }
 
-/** Own profile DTO — includes email and session expiry (spec sections 3.2 and 3.4). */
 data class OwnUserDto(
     val id: UUID,
     val username: String,
@@ -39,7 +37,6 @@ data class OwnUserDto(
     }
 }
 
-/** Response for the username availability check (spec section 14). */
 data class UsernameCheckDto(
     val username: String,
     val available: Boolean,

@@ -10,18 +10,19 @@ import com.drift.message.models.RoomAccess
 import io.grpc.ManagedChannel
 import io.grpc.StatusException
 import io.grpc.StatusRuntimeException
+import io.micrometer.observation.ObservationRegistry
 import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Component
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-/** gRPC client for room-service `IsMember` (spec section 13.3), behind [IRoomMembership]. Every call has a deadline. */
 @Component
 class RoomMembershipClient(
     properties: AppProperties,
+    observations: ObservationRegistry = ObservationRegistry.NOOP,
 ) : IRoomMembership {
-    private val channel: ManagedChannel = GrpcChannels.create(properties.roomServiceAddr)
+    private val channel: ManagedChannel = GrpcChannels.create(properties.roomServiceAddr, observations)
     private val stub = RoomServiceGrpcKt.RoomServiceCoroutineStub(channel)
 
     override fun access(

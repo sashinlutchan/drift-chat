@@ -1,90 +1,149 @@
 #!/usr/bin/env bash
-# Removes everything deploy.sh created (spec section 27): the Compose stack with its volumes, the Kubernetes
-# namespaces, the minikube profile, Drift images and containers, Gradle daemons and build output.
-# Asks first; --yes skips the question. Safe to run more than once. Your .env files are kept.
-set -uo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MINIKUBE_PROFILE="${MINIKUBE_PROFILE:-drift}"
 SERVICES=(user-service room-service message-service file-service)
 
-if [[ -t 1 ]]; then BOLD=$'\033[1m'; RED=$'\033[31m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; BLUE=$'\033[34m'; RESET=$'\033[0m'
-else BOLD=""; RED=""; GREEN=""; YELLOW=""; BLUE=""; RESET=""; fi
-step() { printf '\n%s==> %s%s\n' "$BLUE$BOLD" "$*" "$RESET"; }
-info() { printf '    %s\n' "$*"; }
-ok()   { printf '    %s✔%s %s\n' "$GREEN" "$RESET" "$*"; }
-warn() { printf '    %s!%s %s\n' "$YELLOW" "$RESET" "$*" >&2; }
-have() { command -v "$1" >/dev/null 2>&1; }
-
+MODE="all"
 YES=false
 for arg in "$@"; do
   case "$arg" in
+    all|compose|k8s) MODE="$arg" ;;
     -y|--yes) YES=true ;;
-    -h|--help) sed -n '2,5p' "$0"; exit 0 ;;
-    *) echo "Unknown option: $arg" >&2; exit 2 ;;
+    -h|--help) sed -n '2,/^$/p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "Usage: teardown.sh [all|compose|k8s] [-y|--yes]"; exit 1 ;;
   esac
 done
 
-if ! $YES; then
-  printf '%sThis will delete:%s\n' "$BOLD" "$RESET"
-  printf '  - the Docker Compose stack: containers, volumes (all chat data!) and orphans\n'
-  printf '  - the Kubernetes namespaces "drift" and "observability" and the minikube profile "%s"\n' "$MINIKUBE_PROFILE"
-  printf '  - all drift/* Docker images\n'
-  printf '  - Gradle daemons, build/ and .gradle/ in every service, and the frontend dist/\n'
+confirm() {
+  $YES && return 0
+  echo "This will delete:"
+  if [ "$MODE" != "k8s" ]; then
+    echo "  - the Docker Compose stack: containers, volumes (all chat data!) and orphans"
+  fi
+  if [ "$MODE" != "compose" ]; then
+    echo "  - the Minikube profile \"$MINIKUBE_PROFILE\" (the Kubernetes namespaces go with it)"
+  fi
+  if [ "$MODE" = "all" ]; then
+    echo "  - all drift/* Docker images and the pulled infrastructure images that nothing else uses"
+    echo "  - Gradle daemons, build/ and .gradle/ in every service, and the frontend dist/"
+  fi
   read -r -p "Continue? [y/N] " answer
   [[ "$answer" =~ ^[Yy]$ ]] || { echo "Nothing was changed."; exit 0; }
-fi
+}
 
-removed=()
+stop_compose() {
+  if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+    echo "docker not available — nothing to stop."
+    return 0
+  fi
+  echo "--- stopping docker containers ---"
+  cd "$ROOT_DIR"
+  docker compose stop || true
+}
 
-step "Docker Compose"
-if have docker && docker info >/dev/null 2>&1; then
-  if docker compose down --volumes --remove-orphans >/dev/null 2>&1; then removed+=("Compose stack, containers and volumes"); ok "stack removed"; else info "nothing to remove"; fi
-else
-  warn "Docker is not running, skipping"
-fi
+stop_k8s() {
+  if ! command -v minikube >/dev/null 2>&1; then
+    echo "minikube not installed — nothing to stop."
+    return 0
+  fi
+  echo "--- stopping Minikube ---"
+  echo "Stopping any active dashboard, tunnel, or proxy processes for profile '$MINIKUBE_PROFILE'..."
+  pkill -f "minikube dashboard -p $MINIKUBE_PROFILE" || true
+  pkill -f "minikube -p $MINIKUBE_PROFILE dashboard" || true
+  pkill -f "kubectl --context $MINIKUBE_PROFILE proxy" || true
+  pkill -f "minikube -p $MINIKUBE_PROFILE tunnel" || true
+  minikube stop -p "$MINIKUBE_PROFILE" 2>/dev/null || true
+}
 
-step "Kubernetes"
-if have kubectl && have minikube && minikube -p "$MINIKUBE_PROFILE" status >/dev/null 2>&1; then
-  for ns in drift observability; do
-    if kubectl --context "$MINIKUBE_PROFILE" delete namespace "$ns" --ignore-not-found --wait=false >/dev/null 2>&1; then removed+=("namespace $ns"); fi
-  done
-fi
-if have minikube; then
-  if minikube profile list 2>/dev/null | grep -qw "$MINIKUBE_PROFILE"; then
-    minikube delete -p "$MINIKUBE_PROFILE" && removed+=("minikube profile $MINIKUBE_PROFILE") && ok "profile deleted"
+compose_remove() {
+  if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+    echo "docker not available — nothing to tear down."
+    return 0
+  fi
+  echo "--- removing the docker compose stack and its volumes ---"
+  cd "$ROOT_DIR"
+  docker compose down -v --remove-orphans || true
+  local leftovers
+  leftovers="$(docker ps -aq --filter 'label=com.docker.compose.project=drift' 2>/dev/null || true)"
+  [ -n "$leftovers" ] && docker rm -f $leftovers >/dev/null 2>&1 || true
+}
+
+k8s_remove() {
+  if ! command -v minikube >/dev/null 2>&1; then
+    echo "minikube not installed — nothing to tear down."
+    return 0
+  fi
+  echo "--- removing Minikube profile '$MINIKUBE_PROFILE' ---"
+  if [ -d "${MINIKUBE_HOME:-$HOME}/.minikube/profiles/$MINIKUBE_PROFILE" ]; then
+    minikube delete -p "$MINIKUBE_PROFILE" || true
   else
-    info "no minikube profile \"$MINIKUBE_PROFILE\""
+    echo "no minikube profile \"$MINIKUBE_PROFILE\""
   fi
-fi
+}
 
-step "Docker images and containers"
-if have docker && docker info >/dev/null 2>&1; then
-  containers="$(docker ps -aq --filter 'label=com.docker.compose.project=drift' 2>/dev/null || true)"
-  if [[ -n "$containers" ]]; then
-    # shellcheck disable=SC2086
-    docker rm -f $containers >/dev/null 2>&1 && removed+=("leftover containers")
+image_cleanup() {
+  if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+    return 0
   fi
+  echo "--- removing project-related docker images ---"
+  cd "$ROOT_DIR"
+  local images
   images="$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '^drift/' || true)"
-  if [[ -n "$images" ]]; then
-    # shellcheck disable=SC2086
-    docker rmi -f $images >/dev/null 2>&1 && removed+=("Drift images ($(echo "$images" | wc -l | tr -d ' '))") && ok "images removed"
-  else
-    info "no Drift images"
+  images="$images
+$(docker compose config --images 2>/dev/null | grep -v '^drift/' || true)"
+  echo $images | xargs -n1 docker rmi 2>/dev/null || true
+  if [ "$MODE" != "compose" ]; then
+    local kicbase
+    kicbase="$(docker images --format '{{.Repository}} {{.ID}}' | awk '/^gcr\.io\/k8s-minikube\/kicbase / {print $2}' | sort -u)"
+    [ -n "$kicbase" ] && docker rmi $kicbase 2>/dev/null || true
   fi
-fi
+}
 
-step "Gradle daemons and build output"
-for svc in "${SERVICES[@]}"; do
-  dir="backend/$svc"
-  [[ -x "$dir/gradlew" ]] && (cd "$dir" && ./gradlew --stop >/dev/null 2>&1 || true)
-  rm -rf "$dir/build" "$dir/.gradle" "$dir/.kotlin"
-done
-rm -rf frontend/drift-chat/dist
-removed+=("build output (build/, .gradle/, dist/)")
-ok "done"
+build_cleanup() {
+  echo "--- stopping Gradle daemons and removing build output ---"
+  for svc in "${SERVICES[@]}"; do
+    (cd "$ROOT_DIR/backend/$svc" && ./gradlew --stop >/dev/null 2>&1) || true
+    rm -rf "$ROOT_DIR/backend/$svc/build" "$ROOT_DIR/backend/$svc/.gradle"
+  done
+  rm -rf "$ROOT_DIR/frontend/drift-chat/dist"
+}
 
-step "Summary"
-if [[ ${#removed[@]} -eq 0 ]]; then info "Nothing needed removing."; else for item in "${removed[@]}"; do ok "removed $item"; done; fi
-info "Your .env files were kept."
+compose_down() {
+  stop_compose
+  echo
+  compose_remove
+}
+
+k8s_down() {
+  stop_k8s
+  echo
+  k8s_remove
+}
+
+down_all() {
+  echo "=== Phase 1: stopping containers ==="
+  stop_compose
+  echo
+  stop_k8s
+  echo
+  echo "=== Phase 2: removing stacks, volumes, and images ==="
+  compose_remove
+  echo
+  k8s_remove
+  echo
+  image_cleanup
+  echo
+  build_cleanup
+}
+
+confirm
+case "$MODE" in
+  all)     down_all ;;
+  compose) compose_down ;;
+  k8s)     k8s_down ;;
+esac
+echo
+echo "Done."

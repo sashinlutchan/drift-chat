@@ -15,15 +15,12 @@ import { formatDate, timeUntil } from '@/lib/format'
 import { profileSchema, type ProfileValues } from '@/lib/validation'
 import { useAuth } from '@/stores/auth'
 import { useNavigate } from 'react-router'
-
-/** Your own profile: avatar, username, name, email, status and session expiry; edit avatar, name and email (spec 3.4). */
 export function ProfilePage() {
   const user = useAuth((s) => s.user)
   const setUser = useAuth((s) => s.setUser)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const picker = useRef<HTMLInputElement>(null)
-
   const form = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
     mode: 'onChange',
@@ -43,7 +40,6 @@ export function ProfilePage() {
     [avatar],
   )
   useEffect(() => () => (preview ? URL.revokeObjectURL(preview) : undefined), [preview])
-
   const save = useMutation({
     mutationFn: (values: ProfileValues) =>
       usersApi.update({ name: values.name, email: values.email, avatar: values.avatar }),
@@ -56,9 +52,7 @@ export function ProfilePage() {
     onError: (error) =>
       toast.error('Could not save your profile', { description: errorMessage(error) }),
   })
-
   if (!user) return null
-
   return (
     <div className="mx-auto h-full w-full max-w-xl overflow-y-auto px-4 py-8">
       <h1 className="text-2xl font-semibold tracking-tight">Your profile</h1>

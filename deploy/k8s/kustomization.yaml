@@ -1,20 +1,14 @@
-# Everything in the cluster except the Ingress (which deploy.sh generates for the minikube IP) and the per-service
-# ConfigMaps and Secrets (which deploy.sh generates from each backend/<service>/.env).
-# Build it with: kubectl kustomize --load-restrictor=LoadRestrictionsNone deploy/k8s
-# (the observability configs are shared with the Docker Compose stack, which is why files outside this folder are read)
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
   - namespaces/namespaces.yaml
-  # infrastructure first: StatefulSets, credentials, then the one-off init jobs
   - infra/secret.yaml
   - infra/postgres.yaml
   - infra/kafka.yaml
   - infra/valkey.yaml
   - infra/minio.yaml
   - infra/init-jobs.yaml
-  # services and frontend
   - services/user-service/deployment.yaml
   - services/user-service/service.yaml
   - services/room-service/deployment.yaml
@@ -25,7 +19,6 @@ resources:
   - services/message-service/service.yaml
   - services/message-service/hpa.yaml
   - frontend/frontend.yaml
-  # observability
   - observability/observability.yaml
 
 generatorOptions:

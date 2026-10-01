@@ -68,8 +68,6 @@ class GrpcClientsTest {
             fileServiceAddr = "localhost:$file",
         )
 
-    // ── room ────────────────────────────────────────────────────────────────
-
     @Test
     fun `room access maps member, non member and missing room`() {
         val member = UUID.randomUUID()
@@ -106,8 +104,6 @@ class GrpcClientsTest {
             )
         }.isInstanceOf(DomainError.DependencyUnavailable::class.java)
     }
-
-    // ── user ────────────────────────────────────────────────────────────────
 
     @Test
     fun `profiles are looked up in one call and presence is reported`() {
@@ -157,8 +153,6 @@ class GrpcClientsTest {
         assertThatThrownBy { client.profiles(listOf(UUID.randomUUID())) }.isInstanceOf(DomainError.DependencyUnavailable::class.java)
         assertThatThrownBy { client.setPresence(UUID.randomUUID(), true) }.isInstanceOf(DomainError.DependencyUnavailable::class.java)
     }
-
-    // ── file ────────────────────────────────────────────────────────────────
 
     private class FakeFiles : FileServiceGrpcKt.FileServiceCoroutineImplBase() {
         var rejectWith: Status? = null
@@ -220,7 +214,7 @@ class GrpcClientsTest {
         assertThat(etag).isEqualTo("etag-3")
         assertThat(fake.startedKinds).containsExactly(FileKind.FILE_KIND_MEDIA)
         assertThat(fake.partSizes[3]).isEqualTo(300_000)
-        assertThat(fake.partMessages).isGreaterThan(4) // header + several 64 KB pieces, never one big message
+        assertThat(fake.partMessages).isGreaterThan(4)
     }
 
     @Test
@@ -250,6 +244,11 @@ class GrpcClientsTest {
                 1,
             )
         }.isInstanceOf(DomainError.ValidationFailed::class.java).hasMessageContaining("wrong type")
+
+        fake.rejectWith = Status.FAILED_PRECONDITION.withDescription("Files of type image/svg+xml are not supported.")
+        assertThatThrownBy { client.complete(upload, 1) }
+            .isInstanceOf(DomainError.UnsupportedMediaType::class.java)
+            .hasMessageContaining("svg")
 
         fake.rejectWith = Status.OUT_OF_RANGE.withDescription("too big")
         assertThatThrownBy { client.complete(upload, 1) }.isInstanceOf(DomainError.PayloadTooLarge::class.java)

@@ -1,23 +1,16 @@
 import { io, type Socket } from 'socket.io-client'
 import { config } from '@/lib/config'
 import { useConnection } from '@/stores/connection'
-
-/**
- * The one Socket.IO connection (spec section 15). WebSocket only, so no sticky sessions are needed. `withCredentials`
- * sends the session cookie with the handshake; nothing goes in the `auth` payload.
- */
 export const socket: Socket = io(config.socketUrl, {
   autoConnect: false,
   transports: ['websocket'],
   withCredentials: true,
   reconnection: true,
   reconnectionDelay: 1000,
-  reconnectionDelayMax: 10_000,
+  reconnectionDelayMax: 10000,
 })
-
-const HEARTBEAT_MS = 25_000
+const HEARTBEAT_MS = 25000
 let heartbeat: ReturnType<typeof setInterval> | undefined
-
 socket.on('connect', () => {
   useConnection.getState().setStatus('connected')
   clearInterval(heartbeat)
@@ -46,17 +39,22 @@ export interface AckOk<T = unknown> {
   ok: true
   data?: T
 }
+
 export interface AckError {
   ok: false
-  error: { event: string; code: string; message: string }
+  error: {
+    event: string
+    code: string
+    message: string
+  }
 }
+
 export type Ack<T = unknown> = AckOk<T> | AckError
 
-/** Emits an event and resolves with the server's ack; rejects on an error ack or a timeout. */
 export function emitWithAck<T = unknown>(
   event: string,
   payload: unknown,
-  timeoutMs = 10_000,
+  timeoutMs = 10000,
 ): Promise<T | undefined> {
   return new Promise((resolve, reject) => {
     socket.timeout(timeoutMs).emit(event, payload, (timeout: Error | null, ack?: Ack<T>) => {

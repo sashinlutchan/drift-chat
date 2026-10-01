@@ -24,10 +24,6 @@ import java.util.UUID
 
 private val log = KotlinLogging.logger {}
 
-/**
- * Room business logic (spec sections 5–8 and 13.2). Talks only to the [IRoomRepository], [IUserDirectory] and
- * [IEventPublisher] ports (spec section 21 layering rule).
- */
 @Service
 class RoomService(
     private val repository: IRoomRepository,
@@ -183,7 +179,6 @@ class RoomService(
 
     private fun memberCount(roomId: UUID): Int = repository.memberCounts(listOf(roomId))[roomId] ?: 0
 
-    /** Adds counts, membership, pins and presence to plain rooms. Presence is best effort: a slow user-service must not break the lobby. */
     private fun summarize(
         rooms: List<Room>,
         userId: UUID,

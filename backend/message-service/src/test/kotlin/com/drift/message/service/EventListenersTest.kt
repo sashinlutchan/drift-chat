@@ -71,8 +71,6 @@ class EventListenersTest {
         payload: Any,
     ) = EventEnvelopeJson.serialize(EventEnvelope(type = type, timestamp = now, payload = payload))
 
-    // ── relay: per-pod fan-out ──────────────────────────────────────────────
-
     @Test
     fun `a new message is decrypted and pushed only to sockets in that room`() {
         val enc = TestSupport.cipher.encrypt("hello there".toByteArray())
@@ -158,8 +156,6 @@ class EventListenersTest {
         assertThat(inRoom.events()).containsExactly("member:joined", "member:left")
         assertThat(hub.isInside(inRoom.sessionId, room)).isFalse()
     }
-
-    // ── cascade: shared group ───────────────────────────────────────────────
 
     private val cascade = EventCascadeListener(messages, users)
 

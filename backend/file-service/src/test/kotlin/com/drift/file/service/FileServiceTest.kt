@@ -31,24 +31,29 @@ class FileServiceTest {
     private val sniffer = mockk<IMimeSniffer>()
     private val rooms = mockk<IRoomMembership>()
     private val meters = SimpleMeterRegistry()
-    private val properties =
-        AppProperties(
-            jwtSecret = "x".repeat(32),
-            sessionCookieName = "drift_session",
-            maxAvatarSize = DataSize.ofKilobytes(10),
-            roomServiceAddr = "localhost:9082",
-            storage =
-                AppProperties.Storage(
-                    minioEndpoint = "http://minio",
-                    minioAccessKey = "a",
-                    minioSecretKey = "b",
-                    minioBucketAvatars = "avatars",
-                    minioBucketMedia = "media",
-                    maxFileSize = DataSize.ofMegabytes(100),
-                    abandonedUploadAge = java.time.Duration.ofDays(2),
-                    allowedMimeTypes = listOf("image/png", "image/jpeg", "audio/mpeg", "video/mp4", "audio/wav"),
-                ),
-        )
+
+    private fun propertiesWith(
+        allowed: List<String>,
+        maxFile: DataSize = DataSize.ofMegabytes(100),
+    ) = AppProperties(
+        jwtSecret = "x".repeat(32),
+        sessionCookieName = "drift_session",
+        maxAvatarSize = DataSize.ofKilobytes(10),
+        roomServiceAddr = "localhost:9082",
+        storage =
+            AppProperties.Storage(
+                minioEndpoint = "http://minio",
+                minioAccessKey = "a",
+                minioSecretKey = "b",
+                minioBucketAvatars = "avatars",
+                minioBucketMedia = "media",
+                maxFileSize = maxFile,
+                abandonedUploadAge = java.time.Duration.ofDays(2),
+                allowedMimeTypes = allowed,
+            ),
+    )
+
+    private val properties = propertiesWith(listOf("image/png", "image/jpeg", "audio/mpeg", "video/mp4", "audio/wav"))
     private val now = Instant.parse("2026-06-10T12:00:00Z")
     private val service =
         FileService(repository, storage, sniffer, rooms, properties, meters, java.time.Clock.fixed(now, java.time.ZoneOffset.UTC))
@@ -70,8 +75,6 @@ class FileServiceTest {
             FileRecord(f.id, f.ownerId, f.roomId, f.kind, f.mimeType, f.sizeBytes, f.objectKey, Instant.EPOCH)
         }
     }
-
-    // ── small uploads ───────────────────────────────────────────────────────
 
     @Test
     fun `avatar upload sniffs the type, stores the bytes and records the file`() {
@@ -116,7 +119,47 @@ class FileServiceTest {
         verify { storage.delete(any()) }
     }
 
-    // ── multipart ───────────────────────────────────────────────────────────
+    @Test
+    fun `an svg is refused even when it is on the allow-list`() {
+        val permissive =
+            FileService(
+                repository,
+                storage,
+                sniffer,
+                rooms,
+                propertiesWith(listOf("image/png", "image/svg+xml")),
+                meters,
+                java.time.Clock.fixed(now, java.time.ZoneOffset.UTC),
+            )
+        every { sniffer.detect(any()) } returns "image/svg+xml"
+
+        assertThatThrownBy { permissive.upload(mediaInfo.copy(declaredMimeType = "image/svg+xml"), ByteArray(50)) }
+            .isInstanceOf(DomainError.UnsupportedMediaType::class.java)
+        assertThatThrownBy { permissive.startMultipart(mediaInfo.copy(declaredMimeType = "image/svg+xml"), 50) }
+            .isInstanceOf(DomainError.UnsupportedMediaType::class.java)
+        verify(exactly = 0) { storage.put(any(), any(), any()) }
+    }
+
+    @Test
+    fun `the limit can be 5 GB and one byte more is refused`() {
+        val big =
+            FileService(
+                repository,
+                storage,
+                sniffer,
+                rooms,
+                propertiesWith(listOf("video/mp4"), maxFile = DataSize.ofGigabytes(5)),
+                meters,
+                java.time.Clock.fixed(now, java.time.ZoneOffset.UTC),
+            )
+        every { storage.startMultipart(any(), "video/mp4") } returns "mp-1"
+        stubSave()
+
+        assertThat(big.startMultipart(mediaInfo, 5L * 1024 * 1024 * 1024).multipartId).isEqualTo("mp-1")
+        assertThatThrownBy { big.startMultipart(mediaInfo, 5L * 1024 * 1024 * 1024 + 1) }
+            .isInstanceOf(DomainError.PayloadTooLarge::class.java)
+            .hasMessageContaining("5 GB")
+    }
 
     @Test
     fun `start multipart validates the request and opens a MinIO upload`() {
@@ -252,8 +295,6 @@ class FileServiceTest {
         verify { repository.deleteById(rec.id) }
     }
 
-    // ── delete / metadata ───────────────────────────────────────────────────
-
     @Test
     fun `delete removes object and record, and reports whether the file existed`() {
         val rec = record()
@@ -286,8 +327,6 @@ class FileServiceTest {
         assertThat(service.metadata(rec.id)).isEqualTo(rec)
         assertThat(service.metadata(UUID.randomUUID())).isNull()
     }
-
-    // ── open (REST download) ────────────────────────────────────────────────
 
     @Test
     fun `members can open room media and get the requested range`() {
@@ -361,8 +400,6 @@ class FileServiceTest {
         assertThatThrownBy { service.open(rec.id, UUID.randomUUID(), null) }.isInstanceOf(DomainError.NotFound::class.java)
     }
 
-    // ── abandoned uploads ───────────────────────────────────────────────────
-
     @Test
     fun `the sweep removes old records whose object never arrived and keeps finished ones`() {
         val a = record().copy(objectKey = "media/x/abandoned")
@@ -387,8 +424,6 @@ class FileServiceTest {
 
         assertThat(threshold.captured).isEqualTo(now.minus(java.time.Duration.ofDays(2)))
     }
-
-    // ── cascades ────────────────────────────────────────────────────────────
 
     @Test
     fun `deleting a room removes all its files`() {

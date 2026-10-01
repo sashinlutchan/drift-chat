@@ -12,15 +12,14 @@ import org.springframework.data.repository.query.Param
 import java.time.Instant
 import java.util.UUID
 
-/** Spring Data repository for rooms — used only by [RoomRepository]. */
 interface DataRepository : JpaRepository<RoomEntity, UUID> {
     fun findBySlug(slug: String): RoomEntity?
 
     fun existsBySlug(slug: String): Boolean
 
-    @Query("select r from RoomEntity r where :search is null or lower(r.name) like lower(concat('%', :search, '%'))")
+    @Query("select r from RoomEntity r where lower(r.name) like lower(concat('%', :search, '%'))")
     fun search(
-        @Param("search") search: String?,
+        @Param("search") search: String,
     ): List<RoomEntity>
 
     fun findByEmptySinceBefore(threshold: Instant): List<RoomEntity>
@@ -46,7 +45,6 @@ interface DataRepository : JpaRepository<RoomEntity, UUID> {
     ): Int
 }
 
-/** Spring Data repository for memberships. */
 interface MembersDataRepository : JpaRepository<RoomMemberEntity, RoomMemberId> {
     @Query("select m from RoomMemberEntity m where m.id.roomId in :roomIds and m.leftAt is null")
     fun activeIn(
@@ -70,7 +68,6 @@ interface MembersDataRepository : JpaRepository<RoomMemberEntity, RoomMemberId> 
     ): Int
 }
 
-/** Spring Data repository for pins. */
 interface PinsDataRepository : JpaRepository<RoomPinEntity, RoomPinId> {
     @Query("select p from RoomPinEntity p where p.id.userId = :userId")
     fun ofUser(

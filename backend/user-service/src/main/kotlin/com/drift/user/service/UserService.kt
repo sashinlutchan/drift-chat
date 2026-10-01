@@ -23,11 +23,6 @@ import java.io.InputStream
 import java.time.Clock
 import java.util.UUID
 
-/**
- * User business logic (spec sections 3 and 13.1). Talks only to the domain ports
- * ([IUserRepository], [IPresenceStore], [IAvatarUploader], [IEventPublisher]) —
- * never to Spring Data, Valkey or Kafka directly (spec section 21 layering rule).
- */
 @Service
 class UserService(
     private val userRepository: IUserRepository,
@@ -39,7 +34,6 @@ class UserService(
     private val clock: Clock,
     private val meters: io.micrometer.core.instrument.MeterRegistry,
 ) : IUserService {
-    /** Sign up: validates input, stores the avatar, saves the user, issues the session JWT. */
     @Transactional
     override fun signUp(
         username: String,
@@ -68,8 +62,6 @@ class UserService(
             throw DomainError.UsernameTaken("This username is taken.")
         }
 
-        // The id is chosen first so the avatar is stored under the real user id; that is how file-service finds it again
-        // when this user expires (`user.deleted`).
         val userId = UUID.randomUUID()
         val avatarFileId =
             avatarUploader.uploadAvatar(
@@ -95,7 +87,6 @@ class UserService(
             } catch (
                 @Suppress("TooGenericExceptionCaught") e: Exception,
             ) {
-                // Don't leave an orphaned avatar behind if the user could not be saved
                 runCatching { avatarUploader.deleteAvatar(avatarFileId) }
                 throw e
             }
@@ -153,12 +144,10 @@ class UserService(
         return updated
     }
 
-    /** Presence heartbeat (spec section 4): keeps the user online for PRESENCE_TTL. */
     override fun heartbeat(userId: UUID) {
         presenceStore.heartbeat(userId, properties.presenceTtl)
     }
 
-    /** Explicit presence change from message-service (socket connected / disconnected); publishes `presence.changed`. */
     override fun setPresence(
         userId: UUID,
         online: Boolean,
@@ -181,7 +170,6 @@ class UserService(
 
     override fun onlineStatus(ids: Collection<UUID>): Map<UUID, Boolean> = ids.associateWith { presenceStore.isOnline(it) }
 
-    /** Cleanup (spec section 13.1): deletes expired users and publishes `user.deleted`. */
     @Transactional
     override fun deleteExpiredUsers(): List<UUID> {
         val deleted = userRepository.deleteExpired(clock.instant())

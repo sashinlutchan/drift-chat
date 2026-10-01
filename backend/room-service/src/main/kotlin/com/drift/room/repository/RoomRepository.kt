@@ -14,7 +14,6 @@ import java.time.Clock
 import java.time.Instant
 import java.util.UUID
 
-/** Adapter implementing [IRoomRepository] on top of Spring Data. */
 @Repository
 class RoomRepository(
     private val rooms: DataRepository,
@@ -25,7 +24,6 @@ class RoomRepository(
     @Transactional
     override fun save(room: NewRoom): Room {
         val now = clock.instant()
-        // A brand-new room is empty until someone opens it, so its idle countdown starts straight away (spec 8.1).
         return rooms.save(RoomEntity(UUID.randomUUID(), room.name, room.slug, room.createdBy, now, now, now)).toRoom()
     }
 
@@ -35,7 +33,10 @@ class RoomRepository(
 
     override fun slugExists(slug: String): Boolean = rooms.existsBySlug(slug)
 
-    override fun search(search: String?): List<Room> = rooms.search(search?.trim()?.takeIf { it.isNotEmpty() }).map(RoomEntity::toRoom)
+    override fun search(search: String?): List<Room> {
+        val term = search?.trim()?.takeIf { it.isNotEmpty() }
+        return (if (term == null) rooms.findAll() else rooms.search(term)).map(RoomEntity::toRoom)
+    }
 
     override fun memberCounts(roomIds: Collection<UUID>): Map<UUID, Int> = memberIds(roomIds).mapValues { it.value.size }
 

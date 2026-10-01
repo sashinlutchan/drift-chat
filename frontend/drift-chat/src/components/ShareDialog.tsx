@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { copyLink, shareLink } from '@/lib/share'
-
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -18,7 +17,6 @@ interface Props {
   url: string
 }
 
-/** Shown after creating a room, and from the top bar's Share button. */
 export function ShareDialog({ open, onOpenChange, roomName, url }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

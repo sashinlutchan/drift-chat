@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration
 import java.time.Clock
 import java.util.Base64
 
-/** Shared bean wiring: Clock (testable time), JwtSupport and the message cipher with its key versions. */
 @Configuration
 @EnableConfigurationProperties(AppProperties::class)
 class BeanConfig {

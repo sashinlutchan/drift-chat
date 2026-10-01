@@ -36,7 +36,6 @@ repositories {
 }
 
 dependencies {
-    // ── Spring Boot starters ────────────────────────────────────────────────
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
@@ -50,7 +49,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     implementation("io.micrometer:micrometer-registry-prometheus")
 
-    // ── Kotlin ──────────────────────────────────────────────────────────────
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j")
@@ -58,10 +56,8 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.13")
 
-    // ── Databases & drivers ─────────────────────────────────────────────────
     runtimeOnly("org.postgresql:postgresql")
 
-    // ── gRPC (Spring Boot 4.1 built-in starters) ────────────────────────────
     implementation("org.springframework.boot:spring-boot-starter-grpc-server")
     implementation("org.springframework.boot:spring-boot-starter-grpc-client")
     implementation("io.grpc:grpc-kotlin-stub:1.5.0")
@@ -69,11 +65,9 @@ dependencies {
     implementation("io.grpc:grpc-stub")
     implementation("com.google.protobuf:protobuf-kotlin:4.35.1")
 
-    // ── Scheduling (ShedLock) ───────────────────────────────────────────────
     implementation("net.javacrumbs.shedlock:shedlock-spring:7.10.1")
     implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.10.1")
 
-    // ── Testing (unit + integration tests together in src/test/kotlin) ──────
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
@@ -91,7 +85,6 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-// ── Tests: unit + integration all run with `test` (part of `check`) ─────────
 tasks.withType<Test> {
     useJUnitPlatform()
     testLogging {
@@ -100,12 +93,10 @@ tasks.withType<Test> {
     }
 }
 
-// ── JaCoCo (≥ 80% on service + common packages, wired into check) ────────────
 jacoco {
     toolVersion = "0.8.14"
 }
 
-// Coverage is measured on the service and common packages (spec section 23).
 val coverageIncludes = listOf("com/drift/user/service/**", "com/drift/user/common/**")
 
 tasks.jacocoTestReport {
@@ -150,8 +141,6 @@ detekt {
     buildUponDefaultConfig = true
 }
 
-// ── Protobuf / gRPC code generation (spec section 16) ───────────────────────
-// Shared protos live in backend/proto (../proto locally, ./proto in the Docker build context).
 val protoRoot: File = listOf(file("../proto"), file("proto")).first { it.exists() }
 
 sourceSets {
@@ -180,7 +169,6 @@ protobuf {
     }
 }
 
-// Lint only our own sources, never the generated protobuf/gRPC code.
 afterEvaluate {
     tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.BaseKtLintCheckTask>().configureEach {
         setSource(fileTree("src") { include("**/*.kt", "**/*.kts") })

@@ -25,15 +25,13 @@ spec:
     spec:
       containers:
         - name: minio
-          # MinIO no longer publishes an official image, so this is pinned by digest
-          image: chainguard/minio@sha256:71674988a1c7ddd5724928633199152b11e4ddefd6c6ce2d60772ff4a8f22ca9
+          image: chainguard/minio:latest
           args: ["server", "/data", "--console-address", ":9001"]
           ports:
             - { containerPort: 9000, name: s3 }
             - { containerPort: 9001, name: console }
           envFrom: [{ secretRef: { name: minio-secret } }]
           env:
-            # Leftover parts of abandoned multipart uploads are removed after this long (spec section 13.6)
             - { name: MINIO_API_STALE_UPLOADS_EXPIRY, value: 24h }
             - { name: MINIO_PROMETHEUS_AUTH_TYPE, value: public }
           readinessProbe:
@@ -51,5 +49,4 @@ spec:
     - metadata: { name: data }
       spec:
         accessModes: [ReadWriteOnce]
-        # Room media can be up to 1 GB per file (spec section 13.6)
         resources: { requests: { storage: 50Gi } }

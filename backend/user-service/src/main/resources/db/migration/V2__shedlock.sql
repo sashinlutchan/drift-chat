@@ -1,4 +1,3 @@
--- ShedLock (spec section 2): makes sure only one replica runs each scheduled job at a time
 CREATE TABLE shedlock (
     name       VARCHAR(64)  NOT NULL PRIMARY KEY,
     lock_until TIMESTAMPTZ  NOT NULL,

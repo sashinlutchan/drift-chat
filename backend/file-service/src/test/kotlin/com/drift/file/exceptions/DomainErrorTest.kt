@@ -24,4 +24,11 @@ class DomainErrorTest {
         assertThat(DomainError.PayloadTooLarge("x").status).isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE)
         assertThat(DomainError.UnsupportedMediaType("x").status).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
     }
+
+    @Test
+    fun `an unsupported file type has its own gRPC status, separate from other bad input`() {
+        assertThat(DomainError.UnsupportedMediaType("no svg").toGrpcStatus().code).isEqualTo(io.grpc.Status.Code.FAILED_PRECONDITION)
+        assertThat(DomainError.ValidationFailed("bad").toGrpcStatus().code).isEqualTo(io.grpc.Status.Code.INVALID_ARGUMENT)
+        assertThat(DomainError.UnsupportedMediaType("no svg").toGrpcStatus().description).isEqualTo("no svg")
+    }
 }

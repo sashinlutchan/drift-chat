@@ -1,5 +1,3 @@
-# Datasources are provisioned from files (spec section 26). Logs link to traces (derived field on traceId) and
-# traces link back to logs, so you can jump either way.
 apiVersion: 1
 
 datasources:

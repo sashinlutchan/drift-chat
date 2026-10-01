@@ -9,10 +9,6 @@ import org.springframework.stereotype.Component
 
 private val log = KotlinLogging.logger {}
 
-/**
- * Removes records of uploads that were started but never finished (spec section 13.6: abandoned uploads). MinIO
- * itself drops the leftover parts; this clears the matching database rows. ShedLock keeps it to one replica at a time.
- */
 @Component
 class FileCleanupJob(
     private val files: IFileService,

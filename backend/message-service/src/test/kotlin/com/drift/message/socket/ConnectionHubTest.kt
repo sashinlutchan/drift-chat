@@ -155,7 +155,6 @@ class ConnectionHubTest {
             sockets.forEach { socket ->
                 hub.roomsOf(socket.sessionId).forEach { r -> assertThat(hub.isInside(socket.sessionId, r)).isTrue() }
             }
-            // every remaining entry is a real one: unregistering everything leaves nothing behind
             sockets.forEach { hub.unregister(it.sessionId) }
             rooms.forEach { r ->
                 hub.sendToRoom(r, "after", 1)

@@ -11,18 +11,15 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { parseRoomSlug } from '@/lib/validation'
-
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSlug: (slug: string) => void
 }
 
-/** Paste a room link (or just its code) to open that room's join flow (spec section 5.3). */
 export function JoinByLinkDialog({ open, onOpenChange, onSlug }: Props) {
   const [value, setValue] = useState('')
   const [error, setError] = useState<string | null>(null)
-
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
     const slug = parseRoomSlug(value)
@@ -32,7 +29,6 @@ export function JoinByLinkDialog({ open, onOpenChange, onSlug }: Props) {
     onOpenChange(false)
     onSlug(slug)
   }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>

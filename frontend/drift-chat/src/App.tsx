@@ -13,8 +13,6 @@ import { RoomPage } from '@/features/room/RoomPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { ShareLinkPage } from '@/pages/ShareLinkPage'
 import { useTheme } from '@/stores/theme'
-
-/** Routes: /signup, / (lobby), /rooms/:id, /r/:slug (share link), /profile, /users/:id, not-found (spec section 22). */
 export function AppRoutes() {
   return (
     <Routes>
@@ -37,7 +35,7 @@ export default function App() {
   const [queryClient] = useState(
     () =>
       new QueryClient({
-        defaultOptions: { queries: { staleTime: 15_000, refetchOnWindowFocus: true, retry: 1 } },
+        defaultOptions: { queries: { staleTime: 15000, refetchOnWindowFocus: true, retry: 1 } },
       }),
   )
   const theme = useTheme((s) => s.choice)

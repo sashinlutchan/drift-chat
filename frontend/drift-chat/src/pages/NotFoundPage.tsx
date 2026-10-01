@@ -1,6 +1,5 @@
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
-
 export function NotFoundPage() {
   return (
     <div className="grid h-full min-h-[60dvh] place-items-center px-4 text-center">

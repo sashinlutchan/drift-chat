@@ -1,9 +1,5 @@
 package com.drift.user.exceptions
 
-/**
- * Machine-readable error codes returned in Problem Details responses
- * (spec section 14: `application/problem+json` with an extra `code` field).
- */
 enum class ErrorCode {
     VALIDATION_FAILED,
     USERNAME_TAKEN,

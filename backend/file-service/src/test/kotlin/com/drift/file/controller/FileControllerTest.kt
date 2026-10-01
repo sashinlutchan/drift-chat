@@ -27,7 +27,6 @@ import java.util.UUID
 
 @WebMvcTest(controllers = [FileController::class])
 @Import(SecurityBeans::class)
-// A developer's local .env must never change what the tests sign and verify with
 @TestPropertySource(properties = ["JWT_SECRET=test-secret-key-that-is-32-bytes-long!"])
 class FileControllerTest {
     @Autowired lateinit var mockMvc: MockMvc

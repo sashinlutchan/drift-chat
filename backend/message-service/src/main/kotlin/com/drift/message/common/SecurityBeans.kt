@@ -19,13 +19,6 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler
 import javax.crypto.spec.SecretKeySpec
 
-/**
- * Shared security setup repeated in every service (spec sections 19 & 21):
- *  - JWT authentication from the `drift_session` cookie (no `Authorization` header)
- *  - CSRF double-submit via `CookieCsrfTokenRepository` (XSRF-TOKEN cookie readable by
- *    JS, echoed by Axios in the X-XSRF-TOKEN header)
- *  - stateless sessions (the JWT is the session)
- */
 @Configuration
 @EnableWebSecurity
 class SecurityBeans(
@@ -46,20 +39,15 @@ class SecurityBeans(
             }.sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
                 auth
-                    // Everything needs a valid session; the actuator lives on a separate port that is never published.
                     .requestMatchers("/error", "/actuator/**")
                     .permitAll()
                     .anyRequest()
                     .authenticated()
             }.exceptionHandling { it.authenticationEntryPoint(BearerTokenAuthenticationEntryPoint()) }
-            // Wired by hand instead of `oauth2ResourceServer {}`: that DSL exempts every request carrying a
-            // "bearer token" from CSRF, and our resolver reads the cookie — so CSRF would be off for all
-            // signed-in requests. Doing it manually keeps the double-submit check in force.
             .addFilterBefore(bearerTokenFilter(cookieBearerTokenResolver), AuthorizationFilter::class.java)
         return http.build()
     }
 
-    /** HS256 decoder for the session JWT (same secret as [JwtSupport]). */
     @Bean
     fun jwtDecoder(): JwtDecoder =
         NimbusJwtDecoder
