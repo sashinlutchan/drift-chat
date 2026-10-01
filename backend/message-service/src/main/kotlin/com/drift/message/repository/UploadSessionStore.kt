@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.UUID
 
-/** Valkey-backed [IUploadSessionStore]: a hash `upload:{id}` for the session and a set `upload:{id}:chunks` for arrivals. */
 @Component
 class UploadSessionStore(
     private val redis: StringRedisTemplate,

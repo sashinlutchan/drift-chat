@@ -22,7 +22,6 @@ interface Props {
   onConfirm: () => void
 }
 
-/** A proper yes/no dialog for actions that need a confirmation (join a room, leave a room). */
 export function ConfirmDialog({
   open,
   onOpenChange,

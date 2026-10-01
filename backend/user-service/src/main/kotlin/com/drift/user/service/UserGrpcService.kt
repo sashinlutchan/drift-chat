@@ -19,7 +19,6 @@ import kotlinx.coroutines.withContext
 import org.springframework.stereotype.Service
 import java.util.UUID
 
-/** gRPC server for `user.v1.UserService` (spec section 16): profile lookups and presence for other services. */
 @Service
 class UserGrpcService(
     private val userService: IUserService,

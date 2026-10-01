@@ -22,7 +22,6 @@ spec:
         runAsGroup: 10001
         seccompProfile: { type: RuntimeDefault }
       initContainers:
-        # Wait until postgres-init has created this service's database, so the service starts cleanly the first time
         - name: wait-for-database
           image: postgres:18.0-alpine
           envFrom: [{ secretRef: { name: postgres-secret } }]
@@ -41,18 +40,16 @@ spec:
       containers:
         - name: message-service
           image: drift/message-service:local
-          # Images are loaded straight into minikube (no registry), so never pull
           imagePullPolicy: Never
           ports:
             - { containerPort: 8083, name: http }
             - { containerPort: 8090, name: socket }
             - { containerPort: 8183, name: management }
-          # ConfigMap and Secret are generated from backend/message-service/.env by scripts/deploy.sh
           envFrom:
             - configMapRef: { name: message-service-config }
             - secretRef: { name: message-service-secret }
           env:
-            - { name: JAVA_OPTS, value: "-XX:MaxRAMPercentage=70.0" }
+            - { name: JAVA_OPTS, value: "-XX:MaxRAMPercentage=50.0 -XX:MaxDirectMemorySize=256m" }
           startupProbe:
             httpGet: { path: /actuator/health/liveness, port: management }
             periodSeconds: 5
@@ -67,7 +64,7 @@ spec:
             timeoutSeconds: 5
           resources:
             requests: { cpu: 100m, memory: 512Mi }
-            limits: { memory: 1Gi }
+            limits: { memory: 1536Mi }
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

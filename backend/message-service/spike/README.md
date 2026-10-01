@@ -1,6 +1,6 @@
-# Phase 0 spike — Socket.IO v4 compatibility
+# Socket.IO v4 compatibility spike
 
-Goal (spec, Phase 0): confirm the chosen JVM Socket.IO server (**netty-socketio 2.0.14**)
+Goal: confirm the chosen JVM Socket.IO server (**netty-socketio 2.0.14**)
 works with `socket.io-client` **v4.8.4** over WebSocket-only transport:
 
 1. connect with the session cookie read from the WebSocket handshake
@@ -34,7 +34,7 @@ Expected output ends with `SPIKE PASS`.
   so JWT-from-cookie auth on connect is possible.
 - Rooms work (`joinRoom` / `getRoomOperations`), broadcast reaches v4 clients.
 - WebSocket-only transport works (`transports: ['websocket']`), so no sticky sessions needed.
-- Server starts/stops cleanly inside a plain JVM app (Spring lifecycle integration happens
-  in Phase 7 via `SmartLifecycle`).
+- Server starts/stops cleanly inside a plain JVM app (Spring lifecycle integration happens in the
+  `SmartLifecycle` bean).
 
 **Verdict: netty-socketio 2.0.14 is confirmed — no other library needed.**

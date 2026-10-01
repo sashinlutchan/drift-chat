@@ -24,17 +24,11 @@ import java.io.InputStream
 
 private val log = KotlinLogging.logger {}
 
-/**
- * MinIO-backed [IObjectStorage] (spec sections 11 and 13.4); the only class that talks to the MinIO SDK.
- * Abandoned multipart uploads need no rule from us: MinIO itself removes stale ones
- * (`MINIO_API_STALE_UPLOADS_EXPIRY`, 24h by default).
- */
 @Component
 class ObjectStorage(
     private val client: MinioAsyncClient,
     private val properties: AppProperties,
 ) : IObjectStorage {
-    /** Runs once the app is up so a slow MinIO doesn't block startup; buckets are also created by the compose init job. */
     @EventListener(ApplicationReadyEvent::class)
     fun onReady() {
         runCatching { ensureBuckets() }.onFailure { log.warn(it) { "Could not prepare MinIO buckets yet" } }
@@ -174,7 +168,6 @@ class ObjectStorage(
             ).get()
     }
 
-    /** The SDK wraps the real error in one or two layers of future exceptions; look through them. */
     private fun isNotFound(e: Throwable): Boolean =
         generateSequence(e) { it.cause }
             .filterIsInstance<io.minio.errors.ErrorResponseException>()

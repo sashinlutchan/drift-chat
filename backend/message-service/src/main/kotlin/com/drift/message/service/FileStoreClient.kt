@@ -19,6 +19,7 @@ import io.grpc.ManagedChannel
 import io.grpc.Status
 import io.grpc.StatusException
 import io.grpc.StatusRuntimeException
+import io.micrometer.observation.ObservationRegistry
 import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flow
@@ -29,15 +30,12 @@ import java.io.InputStream
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-/**
- * gRPC client for file-service multipart uploads (spec sections 13.6 and 16), behind [IFileStore]. A chunk is read
- * from the HTTP request in 64 KB pieces and streamed on as it arrives, so memory stays flat however big the file is.
- */
 @Component
 class FileStoreClient(
     properties: AppProperties,
+    observations: ObservationRegistry = ObservationRegistry.NOOP,
 ) : IFileStore {
-    private val channel: ManagedChannel = GrpcChannels.create(properties.fileServiceAddr)
+    private val channel: ManagedChannel = GrpcChannels.create(properties.fileServiceAddr, observations)
     private val stub = FileServiceGrpcKt.FileServiceCoroutineStub(channel)
 
     override fun start(
@@ -133,7 +131,6 @@ class FileStoreClient(
         channel.shutdown().awaitTermination(SHORT, TimeUnit.SECONDS)
     }
 
-    /** gRPC failures become domain errors: what file-service refused stays a 4xx, an outage becomes a 503. */
     private fun <T> call(
         @Suppress("UNUSED_PARAMETER") deadlineSeconds: Long,
         block: suspend () -> T,
@@ -149,6 +146,7 @@ class FileStoreClient(
     private fun translate(status: Status): DomainError =
         when (status.code) {
             Status.Code.INVALID_ARGUMENT -> DomainError.ValidationFailed(status.description ?: "The file was rejected.")
+            Status.Code.FAILED_PRECONDITION -> DomainError.UnsupportedMediaType(status.description ?: "That type of file is not supported.")
             Status.Code.OUT_OF_RANGE -> DomainError.PayloadTooLarge(status.description ?: "The file is too large.")
             Status.Code.NOT_FOUND -> DomainError.NotFound(status.description ?: "File not found.")
             else -> DomainError.DependencyUnavailable("file-service is unavailable: ${status.code}")

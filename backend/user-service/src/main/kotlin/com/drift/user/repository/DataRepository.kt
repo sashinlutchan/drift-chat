@@ -8,12 +8,10 @@ import org.springframework.stereotype.Repository
 import java.time.Instant
 import java.util.UUID
 
-/** Spring Data repository — used only by [UserRepository], never by the service layer. */
 interface DataRepository : JpaRepository<UserEntity, UUID> {
     fun existsByUsername(username: String): Boolean
 }
 
-/** Adapter implementing the domain port [IUserRepository]. */
 @Repository
 class UserRepository(
     private val springData: DataRepository,

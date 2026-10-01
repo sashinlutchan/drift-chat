@@ -3,11 +3,6 @@ package com.drift.user.exceptions
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 
-/**
- * Sealed hierarchy of domain errors (spec section 21: sealed classes for domain errors).
- * Each error knows its HTTP status and machine-readable [ErrorCode] so the
- * REST layer can map it to an RFC 9457 Problem Details response.
- */
 sealed class DomainError(
     val status: HttpStatus,
     val code: ErrorCode,
@@ -46,7 +41,6 @@ sealed class DomainError(
     ) : DomainError(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ErrorCode.UNSUPPORTED_MEDIA_TYPE, detail)
 }
 
-/** Maps a [DomainError] to an RFC 9457 Problem Details body carrying the extra `code` field. */
 fun DomainError.toProblemDetail(): ProblemDetail =
     ProblemDetail.forStatusAndDetail(status, detail).apply {
         title = status.toString()

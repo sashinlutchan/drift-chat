@@ -11,7 +11,6 @@ import java.util.UUID
 
 private val log = KotlinLogging.logger {}
 
-/** Sends `typing:update` to this pod's sockets in a room whenever any pod announces a typing change (spec section 7.5). */
 @Component
 class TypingBroadcaster(
     private val typing: ITypingStore,

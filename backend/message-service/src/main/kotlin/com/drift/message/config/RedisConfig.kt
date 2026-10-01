@@ -9,7 +9,6 @@ import org.springframework.data.redis.listener.ChannelTopic
 import org.springframework.data.redis.listener.RedisMessageListenerContainer
 import java.util.UUID
 
-/** Subscribes this pod to typing changes announced by any pod (Valkey pub/sub). */
 @Configuration
 class RedisConfig {
     @Bean

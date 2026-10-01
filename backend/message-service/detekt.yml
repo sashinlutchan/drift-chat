@@ -1,4 +1,3 @@
-# detekt configuration for Drift services (detekt 2.0.0-alpha.3)
 complexity:
   LongMethod:
     allowedLines: 120

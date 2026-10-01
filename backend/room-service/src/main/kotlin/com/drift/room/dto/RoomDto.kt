@@ -8,14 +8,12 @@ import jakarta.validation.constraints.Size
 import java.time.Instant
 import java.util.UUID
 
-/** Body of `POST /rooms`. */
 data class CreateRoomRequest(
     @field:NotBlank(message = "Room name is required.")
     @field:Size(max = 50, message = "Room name can be at most 50 characters.")
     val name: String,
 )
 
-/** A room card in the lobby (spec section 5.1). */
 data class RoomDto(
     val id: UUID,
     val name: String,
@@ -50,7 +48,6 @@ data class RoomDto(
     }
 }
 
-/** Who created a room; `null` in [RoomInfoDto] means the creator was deleted ("Deleted user"). */
 data class CreatorDto(
     val id: UUID,
     val name: String,
@@ -58,7 +55,6 @@ data class CreatorDto(
     val avatarFileId: UUID?,
 )
 
-/** The room-info panel (spec section 7.7). */
 data class RoomInfoDto(
     val room: RoomDto,
     val createdBy: CreatorDto?,
@@ -79,7 +75,6 @@ data class RoomInfoDto(
     }
 }
 
-/** A row of the members panel (spec section 7.6). */
 data class MemberDto(
     val userId: UUID,
     val username: String,

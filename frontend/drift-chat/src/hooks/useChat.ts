@@ -5,10 +5,8 @@ import type { ChatMessage, DisplayMessage, Sender } from '@/api/types'
 import { emitWithAck, socket, SocketError } from '@/socket/client'
 import { useSocketEvent } from '@/socket/hooks'
 import { useAuth } from '@/stores/auth'
-
 type RoomState = 'joining' | 'ready' | 'gone' | 'not-member' | 'error'
 
-/** Oldest first, no duplicates, and a real message replaces the placeholder that was standing in for it. */
 export function mergeMessages(
   current: DisplayMessage[],
   incoming: ChatMessage[],
@@ -20,15 +18,10 @@ export function mergeMessages(
     (a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id),
   )
   const realIds = new Set(real.map((m) => m.id))
-  // Pending and failed messages stay at the end until the server confirms them
   const pending = current.filter((m) => m.status && !realIds.has(m.id))
   return [...real, ...pending]
 }
 
-/**
- * Everything a room screen needs about its chat: history with "load older", live messages over the socket, sending
- * with retry, the typing indicator and whether the room could be entered at all.
- */
 export function useChat(roomId: string) {
   const me = useAuth((s) => s.user)
   const [messages, setMessages] = useState<DisplayMessage[]>([])
@@ -39,7 +32,6 @@ export function useChat(roomId: string) {
   const [typing, setTyping] = useState<Sender[]>([])
   const [error, setError] = useState<string | null>(null)
   const cursorRef = useRef<string | null>(null)
-
   const loadLatest = useCallback(async () => {
     const page = await messagesApi.history(roomId)
     setMessages((current) => mergeMessages(current, [...page.messages].reverse()))
@@ -49,8 +41,6 @@ export function useChat(roomId: string) {
     }
     setLoaded(true)
   }, [roomId])
-
-  /** Enters the room over the socket and (re)loads recent history; runs again after every reconnect to fill any gap. */
   useEffect(() => {
     let cancelled = false
     const enter = async () => {
@@ -79,11 +69,9 @@ export function useChat(roomId: string) {
       if (socket.connected) socket.emit('room:exit', roomId)
     }
   }, [roomId, loadLatest])
-
   useSocketEvent<ChatMessage>('message:new', (message) => {
     if (message.roomId !== roomId) return
     setMessages((current) => {
-      // the sender's own message replaces its "sending…" placeholder
       const placeholder = current.find(
         (m) =>
           m.status === 'sending' && m.text === message.text && m.sender?.id === message.sender?.id,
@@ -92,31 +80,32 @@ export function useChat(roomId: string) {
       return mergeMessages(rest, [message])
     })
   })
-
-  // The ack says which real message a "sending…" placeholder became; if that message already arrived, drop the placeholder
-  useSocketEvent<{ clientId: string; id: string }>('message:ack', (ack) => {
+  useSocketEvent<{
+    clientId: string
+    id: string
+  }>('message:ack', (ack) => {
     setMessages((current) =>
       current.some((m) => m.id === ack.id)
         ? current.filter((m) => m.clientId !== ack.clientId)
         : current,
     )
   })
-
-  useSocketEvent<{ roomId: string; users: Sender[] }>('typing:update', (update) => {
+  useSocketEvent<{
+    roomId: string
+    users: Sender[]
+  }>('typing:update', (update) => {
     if (update.roomId === roomId) setTyping(update.users.filter((u) => u.id !== me?.id))
   })
-
-  // "Sipho is typing…" clears itself if no fresh update arrives
   useEffect(() => {
     if (typing.length === 0) return
     const timer = setTimeout(() => setTyping([]), 7000)
     return () => clearTimeout(timer)
   }, [typing])
-
-  useSocketEvent<{ roomId: string }>('room:deleted', (e) => {
+  useSocketEvent<{
+    roomId: string
+  }>('room:deleted', (e) => {
     if (e.roomId === roomId) setState('gone')
   })
-
   const loadOlder = useCallback(async () => {
     if (!cursorRef.current || loadingOlder) return
     setLoadingOlder(true)
@@ -131,7 +120,6 @@ export function useChat(roomId: string) {
       setLoadingOlder(false)
     }
   }, [roomId, loadingOlder])
-
   const transmit = useCallback(
     async (clientId: string, text: string) => {
       try {
@@ -146,7 +134,6 @@ export function useChat(roomId: string) {
     },
     [roomId],
   )
-
   const send = useCallback(
     (text: string) => {
       const clientId = crypto.randomUUID()
@@ -174,8 +161,6 @@ export function useChat(roomId: string) {
     },
     [me, roomId, transmit],
   )
-
-  /** Sends a failed message again with the same client id, so it can never appear twice. */
   const retry = useCallback(
     (clientId: string) => {
       const failed = messages.find((m) => m.clientId === clientId)
@@ -187,12 +172,10 @@ export function useChat(roomId: string) {
     },
     [messages, transmit],
   )
-
   const addMessage = useCallback(
     (message: ChatMessage) => setMessages((current) => mergeMessages(current, [message])),
     [],
   )
-
   return {
     messages,
     state,

@@ -17,11 +17,6 @@ import org.springframework.stereotype.Service
 import java.io.InputStream
 import java.util.UUID
 
-/**
- * Chunked, resumable uploads of up to 1 GB (spec section 13.6). The browser sends `UPLOAD_CHUNK_SIZE` pieces; each is
- * streamed straight through to file-service (which writes it to MinIO as one multipart part), so no service ever holds
- * the whole file. Upload state lives in Valkey so a dropped connection or a page reload can resume.
- */
 @Service
 class UploadService(
     private val files: IFileStore,
@@ -49,10 +44,14 @@ class UploadService(
         if (name.isEmpty()) throw DomainError.ValidationFailed("File name is required.")
         if (sizeBytes <= 0) throw DomainError.ValidationFailed("The file is empty.")
         if (sizeBytes > properties.maxFileSize.toBytes()) {
-            throw DomainError.PayloadTooLarge("Files can be at most ${properties.maxFileSize.toMegabytes()} MB.")
+            throw DomainError.PayloadTooLarge("Files can be at most ${humanSize(properties.maxFileSize.toBytes())}.")
         }
         val mime = mimeType.trim().lowercase()
-        if (mime !in allowed) throw DomainError.UnsupportedMediaType("Files of type $mime are not supported.")
+        if (mime !in allowed ||
+            CAN_EXECUTE.any(mime::contains)
+        ) {
+            throw DomainError.UnsupportedMediaType("Files of type $mime are not supported.")
+        }
 
         val chunkSize = properties.uploadChunkSize.toBytes()
         val started = files.start(userId, roomId, name, mime, sizeBytes)
@@ -109,7 +108,6 @@ class UploadService(
             try {
                 files.complete(StartedUpload(session.fileId, session.multipartId), session.sizeBytes)
             } catch (e: DomainError) {
-                // file-service already cleaned up after itself; there is nothing left to resume
                 sessions.delete(uploadId)
                 throw e
             }
@@ -140,5 +138,14 @@ class UploadService(
         val session = sessions.find(uploadId) ?: throw DomainError.NotFound("This upload doesn't exist or has expired.")
         if (session.uploaderId != userId) throw DomainError.Forbidden("This isn't your upload.")
         return session
+    }
+
+    private companion object {
+        val CAN_EXECUTE = listOf("svg", "xml", "html", "javascript", "ecmascript", "script", "executable", "x-sh")
+
+        const val MIB = 1024L * 1024
+        const val GIB = 1024 * MIB
+
+        fun humanSize(bytes: Long): String = if (bytes % GIB == 0L) "${bytes / GIB} GB" else "${bytes / MIB} MB"
     }
 }

@@ -3,16 +3,9 @@ package com.drift.file.utils
 import com.drift.file.exceptions.DomainError
 import com.drift.file.models.ByteRange
 
-/** Parses the HTTP `Range` header (RFC 9110) for a single byte range. */
 object RangeParser {
     private val SINGLE = Regex("^bytes=(\\d*)-(\\d*)$")
 
-    /**
-     * Returns the requested range, or `null` when the header is absent, malformed or asks for several ranges
-     * (in which case the whole file is served, which is always allowed).
-     *
-     * @throws DomainError.RangeNotSatisfiable when the range lies outside a file of [size] bytes.
-     */
     fun parse(
         header: String?,
         size: Long,

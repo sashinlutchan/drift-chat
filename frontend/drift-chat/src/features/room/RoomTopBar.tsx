@@ -2,7 +2,6 @@ import { ArrowLeft, Info, LogOut, Share2, Users } from 'lucide-react'
 import { Link } from 'react-router'
 import type { Room } from '@/api/types'
 import { Button } from '@/components/ui/button'
-
 interface Props {
   room: Room
   onShare: () => void
@@ -11,7 +10,6 @@ interface Props {
   onLeave: () => void
 }
 
-/** Room name and counts, with Share (always visible), Info, Members and Leave (spec section 7.1). */
 export function RoomTopBar({ room, onShare, onInfo, onMembers, onLeave }: Props) {
   return (
     <div className="flex items-center gap-2 border-b px-3 py-2.5">

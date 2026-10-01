@@ -4,7 +4,6 @@ import com.corundumstudio.socketio.SocketIOClient
 import com.drift.message.interfaces.ISocketConnection
 import java.util.UUID
 
-/** An [ISocketConnection] backed by a real netty-socketio client. */
 class SocketIoConnection(
     private val client: SocketIOClient,
     override val userId: UUID,

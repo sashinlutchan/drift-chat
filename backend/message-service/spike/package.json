@@ -1,7 +1,7 @@
 {
   "name": "spike",
   "version": "1.0.0",
-  "description": "Goal (spec, Phase 0): confirm the chosen JVM Socket.IO server (**netty-socketio 2.0.14**) works with `socket.io-client` **v4.8.4** over WebSocket-only transport:",
+  "description": "Goal: confirm the chosen JVM Socket.IO server (**netty-socketio 2.0.14**) works with `socket.io-client` **v4.8.4** over WebSocket-only transport:",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

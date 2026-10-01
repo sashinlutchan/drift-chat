@@ -9,7 +9,6 @@ import java.io.Serializable
 import java.time.Instant
 import java.util.UUID
 
-/** Composite key (room_id, user_id). */
 @Embeddable
 data class RoomMemberId(
     @Column(name = "room_id") var roomId: UUID,
@@ -20,7 +19,6 @@ data class RoomMemberId(
     }
 }
 
-/** JPA entity for `room_members` (spec section 18); `leftAt == null` means the user is currently a member. */
 @Entity
 @Table(name = "room_members")
 class RoomMemberEntity(

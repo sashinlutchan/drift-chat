@@ -8,17 +8,11 @@ import java.util.concurrent.ConcurrentHashMap
 
 private val log = KotlinLogging.logger {}
 
-/**
- * Runs each socket's events one after another, off the network threads. Blocking work (Valkey, gRPC, JDBC) must never
- * run on Netty's event loop, and one socket's events must stay in order (enter a room *then* send to it), while
- * different sockets run in parallel.
- */
 class SocketDispatcher(
     private val scope: CoroutineScope,
 ) {
     private val queues = ConcurrentHashMap<String, Channel<suspend () -> Unit>>()
 
-    /** Queues [task] behind whatever this socket is already doing. */
     fun submit(
         sessionId: String,
         task: suspend () -> Unit,
@@ -26,7 +20,6 @@ class SocketDispatcher(
         queues.computeIfAbsent(sessionId) { newQueue() }.trySend(task)
     }
 
-    /** Lets what's already queued finish, then stops the socket's queue. */
     fun close(sessionId: String) {
         queues.remove(sessionId)?.close()
     }

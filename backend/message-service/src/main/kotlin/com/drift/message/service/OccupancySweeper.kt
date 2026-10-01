@@ -8,10 +8,6 @@ import org.springframework.stereotype.Component
 
 private val log = KotlinLogging.logger {}
 
-/**
- * Safety net for rooms whose sockets vanished without saying goodbye (a crashed pod): entries that stopped
- * heartbeating are dropped so the room can start its idle countdown. ShedLock keeps it to one replica at a time.
- */
 @Component
 class OccupancySweeper(
     private val chat: IChatService,

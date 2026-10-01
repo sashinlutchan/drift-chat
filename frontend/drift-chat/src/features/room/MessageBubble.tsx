@@ -8,22 +8,18 @@ import { formatClock, splitLinks } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useIsOnline } from '@/stores/presence'
 import { AudioPlayer } from './AudioPlayer'
-
 interface Props {
   message: DisplayMessage
   own: boolean
-  /** First message of a run from the same sender: shows the avatar and name. */
   first: boolean
   onImage: (src: string, name: string) => void
   onRetry: (clientId: string) => void
 }
 
-/** One message: text with clickable links, or an inline image, audio or video (spec sections 7.2 and 7.3). */
 export function MessageBubble({ message, own, first, onImage, onRetry }: Props) {
   const sender = message.sender
   const online = useIsOnline(sender?.id, false)
   const src = fileUrl(message.fileId)
-
   if (message.type === 'system') {
     return (
       <div role="status" className="my-2 text-center text-xs text-muted-foreground">
@@ -31,7 +27,6 @@ export function MessageBubble({ message, own, first, onImage, onRetry }: Props) 
       </div>
     )
   }
-
   return (
     <div
       className={cn(

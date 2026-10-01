@@ -1,12 +1,8 @@
-// Grafana Alloy (spec section 26): one agent for logs and traces.
-//   logs   : container stdout of every service in this Compose project -> Loki (labels: service, level)
-//   traces : OTLP from the services (HTTP 4318 / gRPC 4317) -> Tempo
 
 logging {
   level = "info"
 }
 
-// ── logs ────────────────────────────────────────────────────────────────────────────────────────────────────────
 discovery.docker "containers" {
   host = "unix:///var/run/docker.sock"
   filter {
@@ -35,8 +31,6 @@ loki.source.docker "containers" {
   forward_to = [loki.process.json.receiver]
 }
 
-// The services log one JSON object per line (Spring Boot structured logging) and nginx does too, so the level and
-// the trace id can be pulled out for filtering and for the log -> trace link in Grafana.
 loki.process "json" {
   stage.json {
     expressions = { level = "level", traceId = "traceId" }
@@ -56,7 +50,6 @@ loki.write "default" {
   }
 }
 
-// ── traces ──────────────────────────────────────────────────────────────────────────────────────────────────────
 otelcol.receiver.otlp "default" {
   grpc {
     endpoint = "0.0.0.0:4317"

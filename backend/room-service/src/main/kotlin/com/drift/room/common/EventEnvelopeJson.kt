@@ -5,11 +5,6 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import java.time.Instant
 
-/**
- * JSON serialization for [EventEnvelope] payloads (spec section 17: versioned JSON
- * with event id, type, timestamp, trace context). Jackson 3 (managed by Spring Boot)
- * handles java.time.Instant out of the box.
- */
 object EventEnvelopeJson {
     private val mapper =
         ObjectMapper()
@@ -38,7 +33,6 @@ object EventEnvelopeJson {
         )
     }
 
-    /** Loosely-typed read model used during deserialization. */
     data class RawEnvelope(
         val id: String? = null,
         val type: String? = null,

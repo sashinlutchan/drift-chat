@@ -2,12 +2,10 @@ import { X } from 'lucide-react'
 import { Dialog as SheetPrimitive } from 'radix-ui'
 import * as React from 'react'
 import { cn } from '@/lib/utils'
-
 const Sheet = SheetPrimitive.Root
 const SheetTrigger = SheetPrimitive.Trigger
 const SheetClose = SheetPrimitive.Close
 
-/** A side panel; on phones it covers the screen, on larger screens it slides in from the right. */
 function SheetContent({
   className,
   children,

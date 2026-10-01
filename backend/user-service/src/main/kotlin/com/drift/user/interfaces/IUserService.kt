@@ -5,9 +5,7 @@ import com.drift.user.models.User
 import java.io.InputStream
 import java.util.UUID
 
-/** User business logic (spec sections 3 and 13.1); implemented by `service/UserService`. */
 interface IUserService {
-    /** Sign up: validates input, stores the avatar, saves the user, issues the session JWT. */
     @Suppress("LongParameterList")
     fun signUp(
         username: String,
@@ -36,10 +34,8 @@ interface IUserService {
         avatarSize: Long,
     ): User
 
-    /** Presence heartbeat (spec section 4). */
     fun heartbeat(userId: UUID)
 
-    /** Explicit presence change; publishes `presence.changed`. */
     fun setPresence(
         userId: UUID,
         online: Boolean,
@@ -49,6 +45,5 @@ interface IUserService {
 
     fun onlineStatus(ids: Collection<UUID>): Map<UUID, Boolean>
 
-    /** Deletes expired users and publishes `user.deleted`. */
     fun deleteExpiredUsers(): List<UUID>
 }

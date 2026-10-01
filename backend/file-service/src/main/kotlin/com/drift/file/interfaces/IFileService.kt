@@ -8,9 +8,7 @@ import com.drift.file.models.StoredFile
 import com.drift.file.models.UploadInfo
 import java.util.UUID
 
-/** File business logic (spec section 13.4); implemented by `service/FileService`. */
 interface IFileService {
-    /** Small single upload (avatars). */
     fun upload(
         info: UploadInfo,
         content: ByteArray,
@@ -43,14 +41,12 @@ interface IFileService {
 
     fun metadata(fileId: UUID): FileRecord?
 
-    /** Opens a file for a signed-in user, enforcing room membership for media, honouring an HTTP `Range` header. */
     fun open(
         fileId: UUID,
         userId: UUID,
         rangeHeader: String?,
     ): FileContent
 
-    /** Removes records of uploads that were started but never finished (no object in storage) and are older than [olderThan]. */
     fun sweepAbandonedUploads(olderThan: java.time.Duration): Int
 
     fun deleteByRoom(roomId: UUID): Int

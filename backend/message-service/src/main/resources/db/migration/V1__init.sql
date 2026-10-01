@@ -1,4 +1,3 @@
--- messages_db initial schema (spec section 18)
 CREATE TABLE messages (
     id             UUID PRIMARY KEY,
     room_id        UUID         NOT NULL,

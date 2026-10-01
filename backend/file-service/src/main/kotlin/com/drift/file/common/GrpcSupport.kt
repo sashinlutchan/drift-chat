@@ -17,28 +17,31 @@ import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
 import io.grpc.Status
+import io.micrometer.core.instrument.binder.grpc.ObservationGrpcClientInterceptor
+import io.micrometer.observation.ObservationRegistry
 import org.slf4j.MDC
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
 
-/** gRPC metadata keys shared by the interceptors. */
 object GrpcKeys {
     val AUTHORIZATION: Metadata.Key<String> = Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER)
     val REQUEST_ID: Metadata.Key<String> = Metadata.Key.of("x-request-id", Metadata.ASCII_STRING_MARSHALLER)
     val TRACEPARENT: Metadata.Key<String> = Metadata.Key.of("traceparent", Metadata.ASCII_STRING_MARSHALLER)
 }
 
-/** Builds outbound gRPC channels to the other services on the private network. */
 object GrpcChannels {
     private const val DEFAULT_DEADLINE_SECONDS = 30L
 
-    fun create(target: String): ManagedChannel =
+    fun create(
+        target: String,
+        observations: ObservationRegistry = ObservationRegistry.NOOP,
+    ): ManagedChannel =
         Grpc
             .newChannelBuilder(target, InsecureChannelCredentials.create())
             .maxInboundMessageSize(MAX_MESSAGE_BYTES)
-            .intercept(RequestContextClientInterceptor())
+            .intercept(ObservationGrpcClientInterceptor(observations), RequestContextClientInterceptor())
             .build()
 
     fun shutdown(channel: ManagedChannel) {
@@ -49,7 +52,6 @@ object GrpcChannels {
     const val MAX_MESSAGE_BYTES = 16 * 1024 * 1024
 }
 
-/** Propagates the request id (from MDC) to called services. */
 class RequestContextClientInterceptor : ClientInterceptor {
     override fun <ReqT, RespT> interceptCall(
         method: MethodDescriptor<ReqT, RespT>,
@@ -71,7 +73,6 @@ class RequestContextClientInterceptor : ClientInterceptor {
     }
 }
 
-/** Reads/creates the request id, keeps it in the logging context during the call and logs the outcome. */
 class LoggingServerInterceptor : ServerInterceptor {
     override fun <ReqT, RespT> interceptCall(
         call: ServerCall<ReqT, RespT>,
@@ -115,11 +116,6 @@ class LoggingServerInterceptor : ServerInterceptor {
     }
 }
 
-/**
- * Verifies the user's JWT passed in call metadata (`authorization: Bearer <jwt>`).
- * A token that is present but invalid is rejected; a missing token is rejected only when [required].
- * Internal, event-driven calls carry no user JWT, so the default is optional.
- */
 class JwtServerInterceptor(
     private val jwtSupport: JwtSupport,
     private val required: Boolean = false,

@@ -24,10 +24,6 @@ import org.springframework.web.multipart.MultipartFile
 import java.security.Principal
 import java.util.UUID
 
-/**
- * REST API for user-service (spec section 14): sign up, csrf bootstrap, own profile,
- * public profiles, username check. Thin — all logic is in [UserService].
- */
 @RestController
 @Validated
 class UserController(
@@ -36,7 +32,6 @@ class UserController(
 ) {
     @GetMapping("/users/csrf")
     fun csrf(request: HttpServletRequest): ResponseEntity<Unit> {
-        // The token is created lazily: reading its value is what makes Spring write the XSRF-TOKEN cookie.
         (request.getAttribute(CsrfToken::class.java.name) as? CsrfToken)?.token
         return ResponseEntity.ok().build()
     }

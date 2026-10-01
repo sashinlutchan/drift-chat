@@ -69,8 +69,6 @@ class RoomServiceTest {
         online: Boolean,
     ) = UserProfile(id, name.lowercase(), name, null, online)
 
-    // ── lobby list ──────────────────────────────────────────────────────────
-
     @Test
     fun `pinned rooms come first with the most recently pinned on top, then the rest by recent activity`() {
         val oldPinned = room("OldPin", lastActive = now.minusSeconds(500))
@@ -138,8 +136,6 @@ class RoomServiceTest {
         assertThat(card.memberCount).isEqualTo(1)
     }
 
-    // ── create ──────────────────────────────────────────────────────────────
-
     @Test
     fun `creating a room makes the creator a member and announces it`() {
         val saved = slot<NewRoom>()
@@ -186,8 +182,6 @@ class RoomServiceTest {
         assertThatThrownBy { service.create(me, "x".repeat(51)) }.isInstanceOf(DomainError.ValidationFailed::class.java)
         verify(exactly = 0) { repository.save(any()) }
     }
-
-    // ── info / slug ─────────────────────────────────────────────────────────
 
     @Test
     fun `info shows creator and, for an empty room, when it will be deleted`() {
@@ -244,8 +238,6 @@ class RoomServiceTest {
         assertThat(service.bySlug(r.slug, me).room).isEqualTo(r)
     }
 
-    // ── members ─────────────────────────────────────────────────────────────
-
     @Test
     fun `members list online people first, then offline, alphabetical inside each group`() {
         val r = room()
@@ -275,8 +267,6 @@ class RoomServiceTest {
 
         assertThat(service.members(r.id)).hasSize(1)
     }
-
-    // ── join / rejoin / leave ───────────────────────────────────────────────
 
     @Test
     fun `joining announces the new member and the changed room`() {
@@ -317,8 +307,6 @@ class RoomServiceTest {
         assertThatThrownBy { service.leave(r.id, me) }.isInstanceOf(DomainError.NotFound::class.java)
     }
 
-    // ── pins ────────────────────────────────────────────────────────────────
-
     @Test
     fun `pin and unpin are personal and need an existing room`() {
         val r = room()
@@ -336,8 +324,6 @@ class RoomServiceTest {
         assertThatThrownBy { service.unpin(UUID.randomUUID(), me) }.isInstanceOf(DomainError.NotFound::class.java)
     }
 
-    // ── membership check for other services ─────────────────────────────────
-
     @Test
     fun `isMember distinguishes member, non member and missing room`() {
         val r = room()
@@ -351,8 +337,6 @@ class RoomServiceTest {
         assertThat(service.isMember(UUID.randomUUID(), me)).isNull()
         assertThat(service.find(r.id)).isEqualTo(r)
     }
-
-    // ── idle countdown ──────────────────────────────────────────────────────
 
     @Test
     fun `someone inside stops the countdown, an empty room starts it`() {
@@ -387,8 +371,6 @@ class RoomServiceTest {
         assertThat(service.deleteIdleRooms()).isZero()
         verify(exactly = 0) { events.publish(any(), any<EventEnvelope<*>>()) }
     }
-
-    // ── user deleted ────────────────────────────────────────────────────────
 
     @Test
     fun `a deleted user leaves every room and other members are told`() {

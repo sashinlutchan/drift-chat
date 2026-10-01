@@ -4,7 +4,6 @@ import type { DisplayMessage } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { formatDayLabel } from '@/lib/format'
 import { MessageBubble } from './MessageBubble'
-
 interface Props {
   messages: DisplayMessage[]
   meId: string | undefined
@@ -14,14 +13,9 @@ interface Props {
   onImage: (src: string, name: string) => void
   onRetry: (clientId: string) => void
 }
-
 const NEAR_BOTTOM = 120
 const GROUP_GAP_MS = 5 * 60 * 1000
 
-/**
- * The chat area (spec section 7.2): oldest at the top, consecutive messages from one sender grouped, day
- * separators, older messages loaded when you scroll to the top, and a "new messages" pill when you've scrolled up.
- */
 export function MessageList({
   messages,
   meId,
@@ -35,14 +29,11 @@ export function MessageList({
   const atBottom = useRef(true)
   const previous = useRef({ count: 0, firstId: '', height: 0 })
   const [unseen, setUnseen] = useState(0)
-
   const scrollToBottom = useCallback((smooth = false) => {
     const el = scroller.current
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
     setUnseen(0)
   }, [])
-
-  // After the list changes: stay put when older messages were added on top, follow new ones only if we were at the bottom
   useLayoutEffect(() => {
     const el = scroller.current
     if (!el) return
@@ -60,7 +51,6 @@ export function MessageList({
     }
     previous.current = { count: messages.length, firstId, height: el.scrollHeight }
   }, [messages, meId, scrollToBottom])
-
   const onScroll = () => {
     const el = scroller.current
     if (!el) return
@@ -68,13 +58,10 @@ export function MessageList({
     if (atBottom.current) setUnseen(0)
     if (el.scrollTop < 80 && hasOlder && !loadingOlder) onLoadOlder()
   }
-
-  // A short conversation may not fill the screen: keep loading older messages until it does or runs out
   useEffect(() => {
     const el = scroller.current
     if (el && hasOlder && !loadingOlder && el.scrollHeight <= el.clientHeight) onLoadOlder()
   }, [messages, hasOlder, loadingOlder, onLoadOlder])
-
   return (
     <div className="relative min-h-0 flex-1">
       <div

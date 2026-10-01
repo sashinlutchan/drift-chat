@@ -26,11 +26,6 @@ import java.util.UUID
 
 private val log = KotlinLogging.logger {}
 
-/**
- * File business logic (spec sections 13.4 and 13.6). Talks only to the [IFileRepository], [IObjectStorage],
- * [IMimeSniffer] and [IRoomMembership] ports. Files are never trusted: the type is sniffed from the bytes and
- * the size is checked against what actually reached storage.
- */
 @Service
 class FileService(
     private val repository: IFileRepository,
@@ -80,10 +75,14 @@ class FileService(
         }
         if (sizeBytes <= 0) throw DomainError.ValidationFailed("The file is empty.")
         if (sizeBytes > properties.storage.maxFileSize.toBytes()) {
-            throw DomainError.PayloadTooLarge("Files can be at most ${properties.storage.maxFileSize.toMegabytes()} MB.")
+            throw DomainError.PayloadTooLarge("Files can be at most ${humanSize(properties.storage.maxFileSize.toBytes())}.")
         }
         val declared = MimeSniffer.normalize(info.declaredMimeType)
-        if (declared !in allowed) throw DomainError.UnsupportedMediaType("Files of type $declared are not supported.")
+        if (MimeSniffer.canExecute(declared) ||
+            declared !in allowed
+        ) {
+            throw DomainError.UnsupportedMediaType("Files of type $declared are not supported.")
+        }
 
         val id = UUID.randomUUID()
         val location = locationFor(info.kind, info.roomId, id)
@@ -196,7 +195,12 @@ class FileService(
         kind: FileKind,
     ) {
         val kindOk = if (kind == FileKind.AVATAR) mime.startsWith("image/") else MEDIA_PREFIXES.any(mime::startsWith)
-        if (!kindOk || mime !in allowed) throw DomainError.UnsupportedMediaType("Files of type $mime are not supported.")
+        if (!kindOk ||
+            MimeSniffer.canExecute(mime) ||
+            mime !in allowed
+        ) {
+            throw DomainError.UnsupportedMediaType("Files of type $mime are not supported.")
+        }
     }
 
     private fun discard(record: FileRecord) {
@@ -235,6 +239,12 @@ class FileService(
 
     private companion object {
         const val HEAD_BYTES = 64 * 1024
+
+        private const val MIB = 1024L * 1024
+        private const val GIB = 1024 * MIB
+
+        private fun humanSize(bytes: Long): String = if (bytes % GIB == 0L) "${bytes / GIB} GB" else "${bytes / MIB} MB"
+
         const val MAX_PART_NUMBER = 10_000
         const val MAX_PART_BYTES = 64 * 1024 * 1024
         val MEDIA_PREFIXES = listOf("image/", "audio/", "video/")

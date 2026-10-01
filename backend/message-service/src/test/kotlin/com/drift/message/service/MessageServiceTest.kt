@@ -53,8 +53,6 @@ class MessageServiceTest {
         every { repository.save(capture(saved)) } answers { firstArg() }
     }
 
-    // ── sending text ────────────────────────────────────────────────────────
-
     @Test
     fun `text is encrypted before it is saved and nothing readable reaches the database`() {
         stubSave()
@@ -145,8 +143,6 @@ class MessageServiceTest {
         assertThat(service.sendText(room, me, "héllo 😀 世界", "c2").text).isEqualTo("héllo 😀 世界")
     }
 
-    // ── media and system messages ───────────────────────────────────────────
-
     @Test
     fun `media messages keep the file id and the file name as text`() {
         every { repository.save(capture(saved)) } answers { firstArg() }
@@ -170,8 +166,6 @@ class MessageServiceTest {
         assertThat(message.type).isEqualTo(MessageType.SYSTEM)
         assertThat(message.text).isEqualTo("Sipho joined the room")
     }
-
-    // ── history ─────────────────────────────────────────────────────────────
 
     private fun stored(text: String) =
         TestSupport.cipher.encrypt(text.toByteArray()).let {
@@ -242,8 +236,6 @@ class MessageServiceTest {
 
         assertThat(message.text).isEqualTo("from the old days")
     }
-
-    // ── cascades ────────────────────────────────────────────────────────────
 
     @Test
     fun `room and user cascades delegate to the repository`() {

@@ -5,7 +5,6 @@ package user.v1;
 option java_multiple_files = true;
 option java_package = "com.drift.grpc.user.v1";
 
-// Internal user API used by room-service and message-service.
 service UserService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
   rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);

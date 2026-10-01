@@ -7,7 +7,6 @@ import jakarta.persistence.Table
 import java.time.Instant
 import java.util.UUID
 
-/** JPA entity for `messages` (spec section 18). A regular class with equality based on id (spec section 21). */
 @Entity
 @Table(name = "messages")
 class MessageEntity(

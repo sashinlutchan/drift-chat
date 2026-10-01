@@ -13,14 +13,12 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { useIsOnline } from '@/stores/presence'
 import type { Member } from '@/api/types'
-
 interface Props {
   roomId: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-/** Everyone in the room, online first, live as people come and go (spec section 7.6). */
 export function MembersPanel({ roomId, open, onOpenChange }: Props) {
   const members = useQuery({
     queryKey: ['members', roomId],

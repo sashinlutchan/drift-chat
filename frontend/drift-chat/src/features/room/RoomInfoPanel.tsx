@@ -11,14 +11,12 @@ import {
 } from '@/components/ui/sheet'
 import { formatDate, timeUntil } from '@/lib/format'
 import { copyLink } from '@/lib/share'
-
 interface Props {
   info: RoomInfo
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-/** Name, creator, created date, member count, share link and the room's deletion countdown (spec section 7.7). */
 export function RoomInfoPanel({ info, open, onOpenChange }: Props) {
   const { room } = info
   return (

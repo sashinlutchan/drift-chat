@@ -12,10 +12,6 @@ import java.util.UUID
 
 private val log = KotlinLogging.logger {}
 
-/**
- * Kafka consumers (spec sections 13.4 and 17): a deleted room takes its files with it, a deleted user takes
- * their avatar. Handlers are idempotent — replaying an event finds nothing left to delete.
- */
 @Component
 class FileEventListener(
     private val files: IFileService,

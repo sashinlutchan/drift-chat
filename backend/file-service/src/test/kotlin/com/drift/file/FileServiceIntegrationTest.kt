@@ -28,10 +28,6 @@ import org.testcontainers.utility.DockerImageName
 import java.util.Base64
 import java.util.UUID
 
-/**
- * Runs the real thing: Flyway + JPA on Postgres, Kafka wiring and MinIO. Proves a multi-part upload is assembled
- * in MinIO, the content type is sniffed from the bytes, ranges read back exactly, and bad files are refused.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Testcontainers
 class FileServiceIntegrationTest {
@@ -84,7 +80,6 @@ class FileServiceIntegrationTest {
         every { rooms.isMember(room, neq(owner)) } returns false
     }
 
-    /** A PNG header followed by filler so the file is big enough for several 5 MB multipart parts. */
     private fun bigPng(size: Int): ByteArray = ByteArray(size).also { png.copyInto(it) }
 
     private fun mediaInfo(mime: String = "image/png") = UploadInfo(owner, room, FileKind.MEDIA, "big.png", mime)

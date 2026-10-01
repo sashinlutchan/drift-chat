@@ -41,7 +41,6 @@ class GrpcSupportTest {
             .setFullMethodName("test.v1.Echo/Say")
             .build()
 
-    /** Runs a unary call through an in-process server guarded by [interceptors]; returns the reply or throws. */
     private fun call(
         vararg interceptors: io.grpc.ServerInterceptor,
         headers: Metadata = Metadata(),

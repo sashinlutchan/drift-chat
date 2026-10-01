@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { AVATAR_TYPES, config } from './config'
-
 export const usernameSchema = z
   .string()
   .min(3, 'Username must be 3-20 characters.')
@@ -12,6 +11,7 @@ export const nameSchema = z
   .trim()
   .min(1, 'Name is required.')
   .max(50, 'Max 50 characters.')
+
 export const emailSchema = z
   .string()
   .trim()
@@ -29,6 +29,7 @@ export const signUpSchema = z.object({
   email: emailSchema,
   avatar: avatarFileSchema,
 })
+
 export type SignUpValues = z.infer<typeof signUpSchema>
 
 export const profileSchema = z.object({
@@ -36,14 +37,15 @@ export const profileSchema = z.object({
   email: emailSchema,
   avatar: avatarFileSchema.optional(),
 })
+
 export type ProfileValues = z.infer<typeof profileSchema>
 
 export const createRoomSchema = z.object({
   name: z.string().trim().min(1, 'Room name is required.').max(50, 'Max 50 characters.'),
 })
+
 export type CreateRoomValues = z.infer<typeof createRoomSchema>
 
-/** Accepts a full room link (https://host/r/slug), "/r/slug" or a bare slug. */
 export function parseRoomSlug(input: string): string | null {
   const trimmed = input.trim()
   if (!trimmed) return null

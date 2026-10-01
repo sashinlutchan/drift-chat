@@ -1,9 +1,6 @@
-# frontend — multi-stage build (spec sections 22 and 24): Yarn build, then static files on a small non-root nginx.
-# Built from the repository root:  docker build -f frontend/drift-chat/Dockerfile -t drift/frontend .
 
 FROM node:24-alpine AS build
 WORKDIR /app
-# Dependencies first so they stay cached until package.json or yarn.lock change
 COPY frontend/drift-chat/package.json frontend/drift-chat/yarn.lock ./
 RUN yarn install --frozen-lockfile
 COPY frontend/drift-chat/ ./

@@ -9,7 +9,6 @@ import jakarta.persistence.Table
 import java.time.Instant
 import java.util.UUID
 
-/** JPA entity for the `files` table (spec section 18). A regular class with equality based on id (spec section 21). */
 @Entity
 @Table(name = "files")
 class FileEntity(

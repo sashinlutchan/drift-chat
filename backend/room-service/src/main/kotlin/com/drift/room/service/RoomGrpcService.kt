@@ -13,7 +13,6 @@ import kotlinx.coroutines.withContext
 import org.springframework.stereotype.Service
 import java.util.UUID
 
-/** gRPC server for `room.v1.RoomService` (spec section 16): membership checks for message-service and file-service. */
 @Service
 class RoomGrpcService(
     private val rooms: IRoomService,

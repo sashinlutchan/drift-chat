@@ -22,11 +22,6 @@ import java.time.Duration
 import java.util.Base64
 import java.util.UUID
 
-/**
- * Message business logic (spec sections 7 and 13.3). Talks only to ports: the repository, the cipher, the event
- * publisher, the dedup store and room membership (spec section 21 layering rule). Content is encrypted before it
- * reaches the database or Kafka and only decrypted for delivery.
- */
 @Service
 class MessageService(
     private val repository: IMessageRepository,
@@ -53,7 +48,6 @@ class MessageService(
         val id = UUID.randomUUID()
         val earlier = dedup.claim(senderId, clientId, id, DEDUP_TTL)
         if (earlier != null) {
-            // A retry: hand back the message that was already created rather than making a second one
             return repository.findById(earlier)?.let(::decrypt)
                 ?: Message(earlier, roomId, senderId, false, MessageType.TEXT, text, null, clock.instant())
         }
@@ -106,7 +100,6 @@ class MessageService(
 
     override fun markSenderDeleted(userId: UUID): Int = repository.markSenderDeleted(userId)
 
-    /** Encrypt → save → publish `message.created` (still encrypted) → count it. */
     private fun store(
         id: UUID,
         roomId: UUID,

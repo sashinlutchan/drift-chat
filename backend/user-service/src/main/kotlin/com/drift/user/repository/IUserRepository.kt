@@ -5,10 +5,6 @@ import com.drift.user.models.User
 import java.time.Instant
 import java.util.UUID
 
-/**
- * Repository port for users (spec section 21 layering rule): the service layer
- * depends on this interface, never on Spring Data directly. Implemented in `persistence/`.
- */
 interface IUserRepository {
     fun existsByUsername(username: String): Boolean
 

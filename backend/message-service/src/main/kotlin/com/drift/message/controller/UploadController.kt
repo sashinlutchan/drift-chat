@@ -21,10 +21,6 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
-/**
- * Chunked, resumable uploads (spec sections 13.6 and 14; nginx exposes these under `/api/v1`). Thin: the chunk body is
- * handed to the service as a stream, never read into memory here.
- */
 @RestController
 class UploadController(
     private val uploads: IUploadService,

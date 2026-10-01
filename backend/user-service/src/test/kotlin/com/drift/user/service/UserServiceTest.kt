@@ -117,7 +117,6 @@ class UserServiceTest {
 
         val result = userService.signUp("sipho", "Sipho", "a@b.co", "a.png", "image/png", stream(), 10L)
 
-        // The avatar is stored under the real user id, which is how file-service finds it when the user expires
         assertThat(ownerSlot.captured).isEqualTo(result.user.id)
 
         assertThat(result.user.username).isEqualTo("sipho")

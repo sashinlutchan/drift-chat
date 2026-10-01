@@ -3,10 +3,7 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 import { defineConfig } from 'vite'
-
-// In development the dev server proxies /api and /socket.io so the browser only
-// ever talks to one origin and the session cookie works without CORS.
-const target = process.env.DEV_PROXY_TARGET ?? 'https://localhost:8443'
+const target = process.env.DEV_PROXY_TARGET ?? 'http://localhost:8080'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],

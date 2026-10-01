@@ -1,4 +1,3 @@
-# Loki (spec section 26): single-node, filesystem storage. Logs arrive from Grafana Alloy.
 auth_enabled: false
 
 server:

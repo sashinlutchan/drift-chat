@@ -58,7 +58,7 @@ class TypingAndSweepTest {
     fun `a lookup failure is logged and swallowed, it never kills the pub-sub listener`() {
         every { typing.active(any(), any()) } throws IllegalStateException("valkey down")
 
-        broadcaster.broadcast(room) // must not throw
+        broadcaster.broadcast(room)
     }
 
     @Test

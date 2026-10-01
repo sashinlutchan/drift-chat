@@ -1,13 +1,11 @@
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import { X } from 'lucide-react'
-
 interface Props {
   src: string | null
   name: string
   onClose: () => void
 }
 
-/** Full-screen image viewer (spec section 7.3). Esc or the close button dismisses it. */
 export function ImageViewer({ src, name, onClose }: Props) {
   return (
     <DialogPrimitive.Root open={src !== null} onOpenChange={(open) => !open && onClose()}>

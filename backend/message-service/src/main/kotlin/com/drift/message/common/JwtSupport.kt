@@ -11,11 +11,6 @@ import java.time.Duration
 import java.time.Instant
 import java.util.Date
 
-/**
- * JWT (HS256) issue/verify helpers (spec section 19).
- * The token carries the user id as `sub`, the username as claim `username`,
- * and `exp` = issue time + session TTL. It only ever travels in the session cookie.
- */
 class JwtSupport(
     private val secret: ByteArray,
     private val clock: Clock,
@@ -47,7 +42,6 @@ class JwtSupport(
         return jwt
     }
 
-    /** Verifies signature and expiry; returns the claims or `null` when invalid/expired. */
     fun verify(token: String): JWTClaimsSet? =
         try {
             val jwt = SignedJWT.parse(token)

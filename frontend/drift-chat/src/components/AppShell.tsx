@@ -16,20 +16,15 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { timeUntil } from '@/lib/format'
 import { useAuth } from '@/stores/auth'
-
-/** The signed-in frame: brand, theme toggle, profile menu with the session countdown, and the live-update bridge. */
 export function AppShell() {
   const user = useAuth((s) => s.user)
   const endSession = useAuth((s) => s.endSession)
-
-  // Sessions last 24h and the account is removed when one ends, so send the user back to sign-up right on time
   useEffect(() => {
     if (!user) return
     const wait = new Date(user.sessionExpiresAt).getTime() - Date.now()
     const timer = setTimeout(endSession, Math.max(0, Math.min(wait, 2 ** 31 - 1)))
     return () => clearTimeout(timer)
   }, [user, endSession])
-
   return (
     <div className="flex h-dvh flex-col">
       <a

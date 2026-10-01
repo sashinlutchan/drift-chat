@@ -9,7 +9,6 @@ import org.springframework.data.repository.query.Param
 import java.time.Instant
 import java.util.UUID
 
-/** Spring Data repository for messages — used only by [MessageRepository]. */
 interface DataRepository : JpaRepository<MessageEntity, UUID> {
     @Query("select m from MessageEntity m where m.roomId = :roomId order by m.createdAt desc, m.id desc")
     fun newest(

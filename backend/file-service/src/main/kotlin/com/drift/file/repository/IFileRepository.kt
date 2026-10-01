@@ -5,7 +5,6 @@ import com.drift.file.models.FileRecord
 import com.drift.file.models.NewFile
 import java.util.UUID
 
-/** Repository port for file metadata (spec section 21 layering rule): the service layer never sees Spring Data. */
 interface IFileRepository {
     fun save(file: NewFile): FileRecord
 
@@ -21,7 +20,6 @@ interface IFileRepository {
 
     fun findByRoom(roomId: UUID): List<FileRecord>
 
-    /** Media records created before [before] — candidates for the abandoned-upload sweep. */
     fun findMediaOlderThan(before: java.time.Instant): List<FileRecord>
 
     fun findByOwnerAndKind(

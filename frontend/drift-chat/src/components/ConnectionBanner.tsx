@@ -1,7 +1,5 @@
 import { Loader2, WifiOff } from 'lucide-react'
 import { useConnection } from '@/stores/connection'
-
-/** "Reconnecting…" with automatic reconnect (spec section 10). */
 export function ConnectionBanner() {
   const status = useConnection((s) => s.status)
   if (status === 'connected') return null

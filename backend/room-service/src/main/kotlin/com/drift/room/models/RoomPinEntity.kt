@@ -9,7 +9,6 @@ import java.io.Serializable
 import java.time.Instant
 import java.util.UUID
 
-/** Composite key (user_id, room_id). */
 @Embeddable
 data class RoomPinId(
     @Column(name = "user_id") var userId: UUID,
@@ -20,7 +19,6 @@ data class RoomPinId(
     }
 }
 
-/** JPA entity for `room_pins` (spec section 18): pins are personal to each user. */
 @Entity
 @Table(name = "room_pins")
 class RoomPinEntity(

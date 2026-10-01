@@ -31,10 +31,6 @@ import java.io.ByteArrayOutputStream
 import java.util.UUID
 import com.drift.grpc.file.v1.FileKind as ProtoKind
 
-/**
- * gRPC server for `file.v1.FileService` (spec section 16). Client streams are drained chunk by chunk into a
- * bounded buffer (one avatar, or one part of a large file) — never the whole 1 GB file.
- */
 @Service
 class FileGrpcService(
     private val files: IFileService,
@@ -45,7 +41,6 @@ class FileGrpcService(
             var info: UploadInfo? = null
             var limit = 0L
             val buffer = ByteArrayOutputStream()
-            // The stream is collected once, checking the size limit as bytes arrive so an oversized upload is cut off early.
             requests.collect { message ->
                 if (message.hasHeader()) {
                     info = message.header.toInfo()

@@ -12,6 +12,7 @@ import com.google.protobuf.ByteString
 import io.grpc.ManagedChannel
 import io.grpc.StatusException
 import io.grpc.StatusRuntimeException
+import io.micrometer.observation.ObservationRegistry
 import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
@@ -21,16 +22,12 @@ import java.io.InputStream
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-/**
- * Inter-service client for file-service (spec sections 12 and 13.1): streams the avatar over
- * gRPC (`Upload`, client streaming) in small chunks, never holding the whole image in memory.
- * Lives in the service layer behind the [IAvatarUploader] port.
- */
 @Component
 class AvatarUploader(
     @Value("\${FILE_SERVICE_ADDR:localhost:9084}") fileServiceAddr: String,
+    observations: ObservationRegistry = ObservationRegistry.NOOP,
 ) : IAvatarUploader {
-    private val channel: ManagedChannel = GrpcChannels.create(fileServiceAddr)
+    private val channel: ManagedChannel = GrpcChannels.create(fileServiceAddr, observations)
     private val stub = FileServiceGrpcKt.FileServiceCoroutineStub(channel)
 
     override fun uploadAvatar(

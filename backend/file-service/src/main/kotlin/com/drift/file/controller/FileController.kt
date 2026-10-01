@@ -15,11 +15,6 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody
 import java.util.UUID
 
-/**
- * `GET /files/{id}` (nginx exposes it as `/api/v1/files/{id}`), spec section 13.4: streams a file with HTTP Range
- * support so audio and video can seek. Plain `<img>`, `<audio>` and `<video>` tags work because the session cookie
- * is sent automatically. Thin — access rules live in the service.
- */
 @RestController
 class FileController(
     private val files: IFileService,
@@ -41,6 +36,7 @@ class FileController(
                 .header(HttpHeaders.ACCEPT_RANGES, "bytes")
                 .header(HttpHeaders.CACHE_CONTROL, "private, max-age=3600")
                 .header("X-Content-Type-Options", "nosniff")
+                .header("Content-Security-Policy", "default-src 'none'; sandbox")
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
         if (content.partial) {
             builder.header(HttpHeaders.CONTENT_RANGE, "bytes ${content.range.start}-${content.range.end}/${content.record.sizeBytes}")

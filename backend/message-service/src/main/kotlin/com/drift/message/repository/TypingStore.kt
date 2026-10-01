@@ -7,11 +7,6 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
-/**
- * Valkey-backed [ITypingStore]: a hash `typing:{roomId}` of userId → expiry. Markers expire by themselves after a few
- * seconds, so a client that goes quiet stops "typing…" without sending anything. Changes are announced on a pub/sub
- * channel so every pod refreshes its own sockets.
- */
 @Component
 class TypingStore(
     private val redis: StringRedisTemplate,

@@ -7,16 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/stores/auth'
 import { useIsOnline } from '@/stores/presence'
-
-/** Somebody else's profile, read-only: avatar, username, name and status — never their email (spec section 3.5). */
 export function UserProfilePage() {
   const { id = '' } = useParams()
   const me = useAuth((s) => s.user)
   const user = useQuery({ queryKey: ['user', id], queryFn: () => usersApi.get(id), retry: false })
   const online = useIsOnline(id, user.data?.online ?? false)
-
   if (me?.id === id) return <Navigate to="/profile" replace />
-
   return (
     <div className="mx-auto grid h-full w-full max-w-md content-start px-4 py-10">
       {user.isPending && <Skeleton className="h-64" />}

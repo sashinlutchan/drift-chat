@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository
 import java.time.Clock
 import java.util.UUID
 
-/** Adapter implementing [IFileRepository] on top of Spring Data. */
 @Repository
 class FileRepository(
     private val data: DataRepository,

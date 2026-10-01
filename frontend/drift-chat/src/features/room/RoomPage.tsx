@@ -17,8 +17,6 @@ import { MembersPanel } from './MembersPanel'
 import { MessageList } from './MessageList'
 import { RoomInfoPanel } from './RoomInfoPanel'
 import { RoomTopBar } from './RoomTopBar'
-
-/** Screen shown when a room can't be used, with a way back to the lobby. */
 function RoomMessage({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
     <div className="grid h-full place-items-center px-4 text-center">
@@ -33,11 +31,9 @@ function RoomMessage({ title, children }: { title: string; children?: React.Reac
   )
 }
 
-/** Inside a room: top bar, live chat, composer, members and info panels, leave (spec section 7). */
 export function RoomPage() {
   const { id = '' } = useParams()
   const [attempt, setAttempt] = useState(0)
-  // Remount the chat after a successful join so it enters the room with the new membership
   return <RoomScreen key={`${id}:${attempt}`} id={id} onJoined={() => setAttempt((n) => n + 1)} />
 }
 
@@ -52,12 +48,20 @@ function RoomScreen({ id, onJoined }: { id: string; onJoined: () => void }) {
     queryFn: () => roomsApi.info(id),
     retry: false,
   })
-  const [share, setShare] = useState((location.state as { share?: boolean } | null)?.share === true)
+  const [share, setShare] = useState(
+    (
+      location.state as {
+        share?: boolean
+      } | null
+    )?.share === true,
+  )
   const [showInfo, setShowInfo] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
   const [leaving, setLeaving] = useState(false)
-  const [viewing, setViewing] = useState<{ src: string; name: string } | null>(null)
-
+  const [viewing, setViewing] = useState<{
+    src: string
+    name: string
+  } | null>(null)
   const leave = useMutation({
     mutationFn: () => roomsApi.leave(id),
     onSuccess: () => {
@@ -68,7 +72,6 @@ function RoomScreen({ id, onJoined }: { id: string; onJoined: () => void }) {
     onError: (error) =>
       toast.error('Could not leave the room', { description: errorMessage(error) }),
   })
-
   if (info.isPending || chat.state === 'joining') {
     if (info.isError)
       return (
@@ -111,7 +114,6 @@ function RoomScreen({ id, onJoined }: { id: string; onJoined: () => void }) {
       </>
     )
   }
-
   const { room } = info.data
   return (
     <div className="flex h-full flex-col">

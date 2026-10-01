@@ -55,8 +55,6 @@ class ChatServiceTest {
         return captured.map { (it.payload as RoomOccupancyPayload).count }
     }
 
-    // ── connect / disconnect / presence ─────────────────────────────────────
-
     @Test
     fun `the first socket of a user marks them online, later ones do not`() {
         every { presence.connect(any(), any(), any()) } returnsMany listOf(true, false)
@@ -115,8 +113,6 @@ class ChatServiceTest {
         assertThat(hub.find(socket.sessionId)).isNotNull()
     }
 
-    // ── entering and leaving rooms ──────────────────────────────────────────
-
     @Test
     fun `members can enter a room and the occupancy is published`() {
         connect()
@@ -170,8 +166,6 @@ class ChatServiceTest {
         verify { typing.stop(room, socket.userId) }
     }
 
-    // ── sending ─────────────────────────────────────────────────────────────
-
     private fun enter() {
         connect()
         every { rooms.access(room, socket.userId) } returns RoomAccess.MEMBER
@@ -212,8 +206,6 @@ class ChatServiceTest {
         verify { typing.start(room, socket.userId, now) }
         verify(atLeast = 2) { typing.announce(room) }
     }
-
-    // ── heartbeat and sweep ─────────────────────────────────────────────────
 
     @Test
     fun `a heartbeat refreshes occupancy, socket presence and the online flag`() {

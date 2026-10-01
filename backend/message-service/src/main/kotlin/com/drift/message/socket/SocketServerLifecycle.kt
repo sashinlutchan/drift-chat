@@ -35,12 +35,6 @@ import java.util.concurrent.TimeUnit
 
 private val log = KotlinLogging.logger {}
 
-/**
- * The Socket.IO v4 server (spec sections 13.3 and 15), started and stopped with the Spring lifecycle. WebSocket only,
- * so no sticky sessions are needed. A connection is accepted only with an allowed `Origin` and a valid session cookie;
- * it is closed when that session's JWT expires. Every event is handed to [IChatService] on a virtual thread, in order
- * per socket.
- */
 @Component
 @ConditionalOnProperty(prefix = "drift.socket", name = ["enabled"], havingValue = "true", matchIfMissing = true)
 class SocketServerLifecycle(
@@ -73,7 +67,6 @@ class SocketServerLifecycle(
                 origin = properties.socket.allowedOrigins.firstOrNull()
                 setTransports(Transport.WEBSOCKET)
                 isAllowCustomRequests = false
-                // We answer acks ourselves, after the work is done on another thread; the default would send an empty ack straight away
                 ackMode = AckMode.MANUAL
                 pingInterval =
                     properties.socket.pingInterval
@@ -145,7 +138,6 @@ class SocketServerLifecycle(
         val connection = SocketIoConnection(client, auth.userId)
         connections[client.sessionId] = connection
         dispatcher.submit(connection.sessionId) { chat.connected(connection) }
-        // The session ends when its JWT does: close the socket, the client's next reconnect gets a 401 (spec section 3.3)
         val delay = Duration.between(clock.instant(), auth.expiresAt).toMillis().coerceAtLeast(0)
         expiryTasks[connection.sessionId] = expiry.schedule({ runCatching { client.disconnect() } }, delay, TimeUnit.MILLISECONDS)
     }
@@ -157,7 +149,6 @@ class SocketServerLifecycle(
         dispatcher.close(connection.sessionId)
     }
 
-    /** Runs one event for one socket in order, replies to the ack if asked, and turns any failure into an `error` event. */
     private fun handle(
         client: SocketIOClient,
         ack: AckRequest,
@@ -211,7 +202,6 @@ class SocketServerLifecycle(
             UUID.fromString(value)
         }.getOrElse { throw DomainError.ValidationFailed("Invalid room id.") }
 
-    /** Graceful shutdown: tidy up every socket's occupancy and presence, tell clients, then stop listening. */
     override fun stop() {
         val running = server ?: return
         server = null

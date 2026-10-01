@@ -7,8 +7,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useTheme } from '@/stores/theme'
-
-/** Dark / light / system (spec section 5.3); defaults to the operating system's preference. */
 export function ThemeToggle() {
   const { choice, setChoice } = useTheme()
   return (

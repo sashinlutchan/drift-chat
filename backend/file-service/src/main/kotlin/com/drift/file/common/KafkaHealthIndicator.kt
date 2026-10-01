@@ -8,10 +8,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.core.KafkaAdmin
 import java.util.concurrent.TimeUnit
 
-/**
- * Readiness check for Kafka (spec section 14): healthy when a broker answers a cluster-description request within a
- * couple of seconds. [probe] returns how many brokers answered, so the logic can be tested without Kafka.
- */
 class KafkaHealthIndicator(
     private val probe: () -> Int,
 ) : HealthIndicator {
@@ -30,7 +26,6 @@ class KafkaHealthIndicator(
 class KafkaHealthConfig {
     @Bean
     fun kafkaHealthIndicator(admin: KafkaAdmin): KafkaHealthIndicator {
-        // One long-lived admin client, created on the first check
         val client by lazy { AdminClient.create(admin.configurationProperties) }
         return KafkaHealthIndicator {
             client

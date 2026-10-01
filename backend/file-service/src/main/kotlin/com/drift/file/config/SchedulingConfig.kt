@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.annotation.EnableScheduling
 import javax.sql.DataSource
 
-/** Turns on `@Scheduled` and guards every job with a Postgres-backed ShedLock so replicas don't run it twice. */
 @Configuration
 @EnableScheduling
 @EnableSchedulerLock(defaultLockAtMostFor = "PT10M")

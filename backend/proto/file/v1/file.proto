@@ -5,12 +5,9 @@ package file.v1;
 option java_multiple_files = true;
 option java_package = "com.drift.grpc.file.v1";
 
-// Internal file API. Small files (avatars) use Upload; room media up to 1 GB uses the multipart RPCs.
 service FileService {
-  // First message carries metadata, the rest carry chunks.
   rpc Upload(stream UploadRequest) returns (UploadResponse);
   rpc StartMultipart(StartMultipartRequest) returns (StartMultipartResponse);
-  // First message carries the part header, the rest carry bytes of that one part.
   rpc UploadPart(stream UploadPartRequest) returns (UploadPartResponse);
   rpc CompleteMultipart(CompleteMultipartRequest) returns (CompleteMultipartResponse);
   rpc AbortMultipart(AbortMultipartRequest) returns (AbortMultipartResponse);
@@ -26,7 +23,7 @@ enum FileKind {
 
 message UploadHeader {
   string owner_id = 1;
-  string room_id = 2; // empty for avatars
+  string room_id = 2;
   FileKind kind = 3;
   string file_name = 4;
   string declared_mime_type = 5;
@@ -55,7 +52,7 @@ message StartMultipartResponse {
 message PartHeader {
   string file_id = 1;
   string multipart_id = 2;
-  int32 part_number = 3; // 1-based
+  int32 part_number = 3;
 }
 message UploadPartRequest {
   oneof payload {
@@ -76,7 +73,7 @@ message CompleteMultipartRequest {
 }
 message CompleteMultipartResponse {
   string file_id = 1;
-  string mime_type = 2; // sniffed
+  string mime_type = 2;
   int64 size_bytes = 3;
 }
 

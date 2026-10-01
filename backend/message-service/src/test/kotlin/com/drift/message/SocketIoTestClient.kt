@@ -12,10 +12,6 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * A tiny Socket.IO v4 client over a raw WebSocket (Engine.IO v4 framing), so the integration test talks to the server
- * exactly the way `socket.io-client` does: `0{…}` open, `40` connect, `42[…]` events, `43<id>[…]` acks, `2`/`3` ping.
- */
 class SocketIoTestClient private constructor(
     private val mapper: ObjectMapper = ObjectMapper(),
 ) : WebSocket.Listener {
@@ -88,7 +84,6 @@ class SocketIoTestClient private constructor(
         connected.completeExceptionally(error)
     }
 
-    /** Emits an event and waits for the server's ack. */
     fun emit(
         name: String,
         payload: Any?,
@@ -101,7 +96,6 @@ class SocketIoTestClient private constructor(
         return future.get(timeoutSeconds, TimeUnit.SECONDS)
     }
 
-    /** Emits without an ack callback (like `socket.emit('presence:heartbeat')`). */
     fun emitNoAck(
         name: String,
         payload: Any? = null,
@@ -130,7 +124,6 @@ class SocketIoTestClient private constructor(
     }
 
     companion object {
-        /** Connects and completes the Socket.IO handshake, or throws if the server refuses it. */
         fun connect(
             port: Int,
             origin: String?,

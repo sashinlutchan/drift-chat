@@ -9,10 +9,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 private val log = KotlinLogging.logger {}
 
-/**
- * This pod's live sockets and the rooms each one has open (spec section 13.3). Every structure is a concurrent
- * collection, so sockets can enter, leave and receive broadcasts from many threads at once without a global lock.
- */
 @Component
 class ConnectionHub : IConnectionHub {
     private val connections = ConcurrentHashMap<String, ISocketConnection>()
@@ -115,7 +111,6 @@ class ConnectionHub : IConnectionHub {
         }
     }
 
-    /** One misbehaving socket must never stop a broadcast reaching the others. */
     private fun safeSend(
         connection: ISocketConnection,
         event: String,
