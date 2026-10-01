@@ -6,9 +6,7 @@
 
 The goal of this system is to build a real-time chat platform with **no passwords and nothing that lingers**. People sign up with a username and an avatar, browse and join public rooms, and chat live with text, images, audio and video. A session lasts 24 hours, and a room that nobody has been inside for 24 hours deletes itself together with its messages and files.
 
-The platform is event-driven: the services call each other over gRPC, publish facts to Kafka (`user.deleted`, `room.deleted`, `message.created`, …), and a Socket.IO server pushes everything to the browsers live. Messages are encrypted before they reach the database or Kafka, and large files travel in resumable chunks straight into MinIO.
-
-It is also a reference for **Kotlin + Spring Boot microservices**, gRPC, Kafka, Socket.IO, Kubernetes and full observability. One command brings everything up and one command removes it.
+Messages stay encrypted, and large files upload in pieces that can pick up where they left off. One command brings everything up and one command removes it.
 
 ## 🧩 Problem Statement
 
@@ -37,7 +35,7 @@ This design keeps the app ephemeral, private and observable.
 
 ## ⚙️ Stack
 
-- **Backend:** Kotlin, Spring Boot 4.1, Java 25 (Amazon Corretto), virtual threads and coroutines. Four standalone Gradle projects, no Lombok
+- **Backend:** Kotlin, Spring Boot 4.1, Java 25 (Amazon Corretto), virtual threads and coroutines. Four standalone Gradle projects
 - **Service to service:** gRPC (grpc-kotlin) for calls, Kafka (KRaft) for events
 - **Live chat:** Socket.IO v4 (netty-socketio) over WebSocket
 - **Data:** PostgreSQL (one database per service) with Flyway, Valkey, MinIO
@@ -308,7 +306,7 @@ Every local username and password is **`admin-change-me`**, so it is easy to sea
 | Prometheus | http://localhost:9090 | none | |
 | PostgreSQL (inside the stack only) | `postgres:5432` | `admin-change-me` | `admin-change-me` |
 
-On Kubernetes the app is at `http://drift.<minikube-ip>.nip.io`, Grafana at `http://grafana.<minikube-ip>.nip.io`, and the MinIO console is reached with `kubectl --context drift -n drift port-forward svc/minio 9001:9001`.
+On Kubernetes, open the dashboard with `minikube dashboard -p drift`. The MinIO console is reached with `kubectl --context drift -n drift port-forward svc/minio 9001:9001`.
 
 **Change all of these before using Drift anywhere but your own machine.** To find every place, run `grep -rn "admin-change-me" . --exclude-dir=node_modules --exclude-dir=build`.
 
