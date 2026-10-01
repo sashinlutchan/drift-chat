@@ -50,10 +50,24 @@ jobs:
           yarn build
 
   images:
-    name: docker images
+    name: image ${{ matrix.image }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: user-service
+            dockerfile: backend/user-service/Dockerfile
+          - image: room-service
+            dockerfile: backend/room-service/Dockerfile
+          - image: message-service
+            dockerfile: backend/message-service/Dockerfile
+          - image: file-service
+            dockerfile: backend/file-service/Dockerfile
+          - image: frontend
+            dockerfile: frontend/drift-chat/Dockerfile
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build images
-        run: docker compose build user-service room-service message-service file-service frontend
+      - name: Build
+        run: docker build -f ${{ matrix.dockerfile }} -t drift/${{ matrix.image }}:local .
